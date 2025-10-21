@@ -19,10 +19,10 @@ export default function Navigation() {
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center gap-8">
             <Link href="/">
-              <a className="flex items-center gap-2 font-bold text-xl text-primary">
+              <div className="flex items-center gap-2 font-bold text-xl text-primary cursor-pointer">
                 <Calculator className="h-6 w-6" />
                 CosPharm Pricing Engine
-              </a>
+              </div>
             </Link>
             <div className="hidden md:flex items-center gap-1">
               {navItems.map((item) => {
