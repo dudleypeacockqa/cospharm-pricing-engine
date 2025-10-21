@@ -48,6 +48,8 @@ export const customers = pgTable("customers", {
   phone: varchar("phone", { length: 50 }),
   logFeeDiscount: decimal("logFeeDiscount", { precision: 5, scale: 2 }).default("0"),
   customerType: varchar("customerType", { length: 50 }).default("retail"),
+  creditLimit: decimal("creditLimit", { precision: 10, scale: 2 }).default("0"),
+  currentBalance: decimal("currentBalance", { precision: 10, scale: 2 }).default("0"),
   active: activeEnum("active").default("yes").notNull(),
   createdAt: timestamp("createdAt").defaultNow(),
   updatedAt: timestamp("updatedAt").defaultNow(),
@@ -71,4 +73,43 @@ export const pricingAudit = pgTable("pricingAudit", {
 
 export type PricingAudit = typeof pricingAudit.$inferSelect;
 export type InsertPricingAudit = typeof pricingAudit.$inferInsert;
+
+// Order status enum
+export const orderStatusEnum = pgEnum("orderStatus", ["draft", "submitted", "confirmed", "shipped", "delivered", "cancelled"]);
+
+// Orders table
+export const orders = pgTable("orders", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  orderNumber: varchar("orderNumber", { length: 50 }).notNull(),
+  customerId: varchar("customerId", { length: 64 }).notNull(),
+  customerName: text("customerName").notNull(),
+  status: orderStatusEnum("status").default("draft").notNull(),
+  subtotal: decimal("subtotal", { precision: 10, scale: 2 }).notNull(),
+  totalDiscount: decimal("totalDiscount", { precision: 10, scale: 2 }).default("0"),
+  total: decimal("total", { precision: 10, scale: 2 }).notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow(),
+  updatedAt: timestamp("updatedAt").defaultNow(),
+});
+
+export type Order = typeof orders.$inferSelect;
+export type InsertOrder = typeof orders.$inferInsert;
+
+// Order items table
+export const orderItems = pgTable("orderItems", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  orderId: varchar("orderId", { length: 64 }).notNull(),
+  productId: varchar("productId", { length: 64 }).notNull(),
+  productName: text("productName").notNull(),
+  quantity: integer("quantity").notNull(),
+  basePrice: decimal("basePrice", { precision: 10, scale: 2 }).notNull(),
+  productDiscount: decimal("productDiscount", { precision: 5, scale: 2 }).notNull(),
+  logFeeDiscount: decimal("logFeeDiscount", { precision: 5, scale: 2 }).notNull(),
+  unitPrice: decimal("unitPrice", { precision: 10, scale: 2 }).notNull(),
+  lineTotal: decimal("lineTotal", { precision: 10, scale: 2 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow(),
+});
+
+export type OrderItem = typeof orderItems.$inferSelect;
+export type InsertOrderItem = typeof orderItems.$inferInsert;
 

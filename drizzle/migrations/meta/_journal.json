@@ -8,6 +8,13 @@
       "when": 1761068338215,
       "tag": "0000_special_fantastic_four",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1761069170663,
+      "tag": "0001_lethal_cargill",
+      "breakpoints": true
     }
   ]
 }
