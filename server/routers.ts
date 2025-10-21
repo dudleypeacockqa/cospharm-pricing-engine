@@ -226,6 +226,48 @@ export const appRouter = router({
       return getRecentPricingAudits(50);
     }),
   }),
+
+  // Promotions router
+  promotions: router({
+    list: publicProcedure.query(async () => {
+      const { getPromotions } = await import("./db");
+      return getPromotions();
+    }),
+    create: protectedProcedure
+      .input(z.object({
+        name: z.string(),
+        description: z.string().nullable(),
+        promotionType: z.string(),
+        discountValue: z.number().nullable(),
+        bonusPattern: z.string().nullable(),
+        startDate: z.date(),
+        endDate: z.date(),
+        active: z.boolean(),
+        priority: z.number(),
+      }))
+      .mutation(async ({ input }) => {
+        const { createPromotion } = await import("./db");
+        const { randomUUID } = await import("crypto");
+        return createPromotion({
+          id: randomUUID(),
+          name: input.name,
+          description: input.description,
+          promotionType: input.promotionType,
+          discountValue: input.discountValue ? input.discountValue.toString() : null,
+          bonusPattern: input.bonusPattern,
+          startDate: input.startDate,
+          endDate: input.endDate,
+          active: input.active,
+          priority: input.priority,
+        });
+      }),
+    delete: protectedProcedure
+      .input(z.object({ id: z.string() }))
+      .mutation(async ({ input }) => {
+        const { deletePromotion } = await import("./db");
+        return deletePromotion(input.id);
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

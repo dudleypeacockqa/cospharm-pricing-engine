@@ -10,6 +10,7 @@ import Products from "./pages/Products";
 import Customers from "./pages/Customers";
 import Reports from "./pages/Reports";
 import CustomerPortal from "./pages/CustomerPortal";
+import Promotions from "./pages/Promotions";
 
 function Router() {
   return (
@@ -18,6 +19,7 @@ function Router() {
       <Route path={"/calculator"} component={Calculator} />
       <Route path={"/products"} component={Products} />
       <Route path={"/customers"} component={Customers} />
+      <Route path={"/promotions"} component={Promotions} />
       <Route path={"/reports"} component={Reports} />
       <Route path={"/portal/:customerId"} component={CustomerPortal} />
       <Route path={"/404"} component={NotFound} />
