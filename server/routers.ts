@@ -268,6 +268,116 @@ export const appRouter = router({
         return deletePromotion(input.id);
       }),
   }),
+
+  // Bulk upload router
+  bulkUpload: router({
+    history: publicProcedure.query(async () => {
+      const { getBulkPriceUpdates } = await import("./db");
+      return getBulkPriceUpdates();
+    }),
+    process: protectedProcedure
+      .input(z.object({
+        fileName: z.string(),
+        fileContent: z.string(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { createBulkPriceUpdate, updateProduct, getProduct } = await import("./db");
+        const { randomUUID } = await import("crypto");
+        
+        let recordsProcessed = 0;
+        let recordsUpdated = 0;
+        let recordsFailed = 0;
+        const errors: string[] = [];
+
+        try {
+          // Parse CSV content
+          const lines = input.fileContent.split('\n').filter(line => line.trim());
+          const headers = lines[0].split(',').map(h => h.trim());
+          
+          // Validate headers
+          const requiredHeaders = ['Product ID', 'Base Price'];
+          const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
+          if (missingHeaders.length > 0) {
+            throw new Error(`Missing required headers: ${missingHeaders.join(', ')}`);
+          }
+
+          // Process each row
+          for (let i = 1; i < lines.length; i++) {
+            recordsProcessed++;
+            try {
+              const values = lines[i].split(',').map(v => v.trim());
+              const row: any = {};
+              headers.forEach((header, index) => {
+                row[header] = values[index];
+              });
+
+              const productId = row['Product ID'];
+              if (!productId) {
+                errors.push(`Row ${i + 1}: Missing Product ID`);
+                recordsFailed++;
+                continue;
+              }
+
+              // Check if product exists
+              const product = await getProduct(productId);
+              if (!product) {
+                errors.push(`Row ${i + 1}: Product ${productId} not found`);
+                recordsFailed++;
+                continue;
+              }
+
+              // Update product
+              const updates: any = {};
+              if (row['Base Price']) {
+                const basePrice = parseFloat(row['Base Price']);
+                if (isNaN(basePrice)) {
+                  errors.push(`Row ${i + 1}: Invalid Base Price`);
+                  recordsFailed++;
+                  continue;
+                }
+                updates.basePrice = basePrice.toString();
+              }
+              if (row['Product Discount']) {
+                const discount = parseFloat(row['Product Discount']);
+                if (!isNaN(discount)) {
+                  updates.productDiscount = discount.toString();
+                }
+              }
+              if (row['Bonus Pattern']) {
+                updates.bonusPattern = row['Bonus Pattern'];
+              }
+
+              await updateProduct(productId, updates);
+              recordsUpdated++;
+            } catch (error: any) {
+              errors.push(`Row ${i + 1}: ${error.message}`);
+              recordsFailed++;
+            }
+          }
+
+          // Log the bulk update
+          await createBulkPriceUpdate({
+            id: randomUUID(),
+            fileName: input.fileName,
+            uploadedBy: ctx.user?.id || 'unknown',
+            recordsProcessed,
+            recordsUpdated,
+            recordsFailed,
+            errorLog: errors.length > 0 ? errors.join('\n') : null,
+          });
+
+          return {
+            success: true,
+            recordsProcessed,
+            recordsUpdated,
+            recordsFailed,
+            errors,
+          };
+        } catch (error: any) {
+          throw new Error(`Bulk upload failed: ${error.message}`);
+        }
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;
