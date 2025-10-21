@@ -85,4 +85,78 @@ export async function getUser(id: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+// Product queries
+export async function getAllProducts() {
+  const db = await getDb();
+  if (!db) return [];
+  const { products } = await import("../drizzle/schema");
+  return db.select().from(products).where(eq(products.active, "yes"));
+}
+
+export async function getProduct(id: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const { products } = await import("../drizzle/schema");
+  const result = await db.select().from(products).where(eq(products.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function createProduct(product: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const { products } = await import("../drizzle/schema");
+  await db.insert(products).values(product);
+}
+
+export async function updateProduct(id: string, updates: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const { products } = await import("../drizzle/schema");
+  await db.update(products).set({ ...updates, updatedAt: new Date() }).where(eq(products.id, id));
+}
+
+// Customer queries
+export async function getAllCustomers() {
+  const db = await getDb();
+  if (!db) return [];
+  const { customers } = await import("../drizzle/schema");
+  return db.select().from(customers).where(eq(customers.active, "yes"));
+}
+
+export async function getCustomer(id: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const { customers } = await import("../drizzle/schema");
+  const result = await db.select().from(customers).where(eq(customers.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function createCustomer(customer: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const { customers } = await import("../drizzle/schema");
+  await db.insert(customers).values(customer);
+}
+
+export async function updateCustomer(id: string, updates: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const { customers } = await import("../drizzle/schema");
+  await db.update(customers).set({ ...updates, updatedAt: new Date() }).where(eq(customers.id, id));
+}
+
+// Pricing audit queries
+export async function createPricingAudit(audit: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const { pricingAudit } = await import("../drizzle/schema");
+  await db.insert(pricingAudit).values(audit);
+}
+
+export async function getRecentPricingAudits(limit: number = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  const { pricingAudit } = await import("../drizzle/schema");
+  const { desc } = await import("drizzle-orm");
+  return db.select().from(pricingAudit).orderBy(desc(pricingAudit.createdAt)).limit(limit);
+}
