@@ -20,7 +20,7 @@ export default function Calculator() {
     calculateMutation.mutate(
       {
         productId: selectedProduct,
-        customerId: selectedCustomer || undefined,
+        customerId: selectedCustomer && selectedCustomer !== "none" ? selectedCustomer : undefined,
       },
       {
         onSuccess: (data) => setCalculation(data),
@@ -29,7 +29,7 @@ export default function Calculator() {
   };
 
   const selectedProductData = products?.find((p) => p.id === selectedProduct);
-  const selectedCustomerData = customers?.find((c) => c.id === selectedCustomer);
+  const selectedCustomerData = customers?.find((c) => c.id === selectedCustomer && selectedCustomer !== "none");
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -79,7 +79,7 @@ export default function Calculator() {
                       <SelectValue placeholder="Select a customer" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">No Customer (Product Discount Only)</SelectItem>
+                      <SelectItem value="none">No Customer (Product Discount Only)</SelectItem>
                       {customers?.map((customer) => (
                         <SelectItem key={customer.id} value={customer.id}>
                           {customer.name} - {customer.logFeeDiscount}% Log Fee
