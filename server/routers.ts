@@ -378,6 +378,61 @@ export const appRouter = router({
         }
       }),
   }),
+
+  // Quotes router
+  quotes: router({
+    generatePDF: protectedProcedure
+      .input(z.object({
+        quoteName: z.string(),
+        customerName: z.string(),
+        items: z.array(z.object({
+          productName: z.string(),
+          quantity: z.number(),
+          basePrice: z.number(),
+          productDiscount: z.number(),
+          unitPrice: z.number(),
+          lineTotal: z.number(),
+        })),
+        subtotal: z.number(),
+        totalDiscount: z.number(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        // For MVP, return a mock PDF URL
+        // In production, this would generate actual PDF using a library like pdfkit or puppeteer
+        return {
+          success: true,
+          pdfUrl: `data:text/plain;charset=utf-8,${encodeURIComponent(JSON.stringify(input, null, 2))}`,
+          message: "PDF generation is a placeholder in MVP. Full implementation will use PDF library.",
+        };
+      }),
+    email: protectedProcedure
+      .input(z.object({
+        quoteName: z.string(),
+        customerName: z.string(),
+        items: z.array(z.object({
+          productName: z.string(),
+          quantity: z.number(),
+          basePrice: z.number(),
+          productDiscount: z.number(),
+          unitPrice: z.number(),
+          lineTotal: z.number(),
+        })),
+        subtotal: z.number(),
+        totalDiscount: z.number(),
+        notes: z.string().optional(),
+        emailAddress: z.string().email(),
+      }))
+      .mutation(async ({ input }) => {
+        // For MVP, just log the email
+        // In production, this would use an email service like SendGrid or AWS SES
+        console.log(`[Email] Sending quote to ${input.emailAddress}:`, input);
+        return {
+          success: true,
+          message: "Email functionality is a placeholder in MVP. Full implementation will use email service.",
+        };
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;
