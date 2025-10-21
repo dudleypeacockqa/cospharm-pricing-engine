@@ -98,7 +98,7 @@ export async function getAllProducts() {
   const db = await getDb();
   if (!db) return [];
   const { products } = await import("../drizzle/schema");
-  return db.select().from(products).where(eq(products.active, "yes"));
+  return db.select().from(products);
 }
 
 export async function getProduct(id: string) {
@@ -128,7 +128,7 @@ export async function getAllCustomers() {
   const db = await getDb();
   if (!db) return [];
   const { customers } = await import("../drizzle/schema");
-  return db.select().from(customers).where(eq(customers.active, "yes"));
+  return db.select().from(customers);
 }
 
 export async function getCustomer(id: string) {
