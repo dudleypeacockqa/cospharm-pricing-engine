@@ -1,0 +1,17 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS \"bulkPriceUpdates\" (\n\t\"id\" varchar(64) PRIMARY KEY NOT NULL,\n\t\"fileName\" varchar(255) NOT NULL,\n\t\"uploadedBy\" varchar(64) NOT NULL,\n\t\"recordsProcessed\" integer NOT NULL,\n\t\"recordsUpdated\" integer NOT NULL,\n\t\"recordsFailed\" integer NOT NULL,\n\t\"errorLog\" text,\n\t\"createdAt\" timestamp DEFAULT now()\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3PHp7ztbFBNkDxM.root --database fwhU47bCmMHPtMZqQZK4Tp --execute CREATE TABLE IF NOT EXISTS \"bulkPriceUpdates\" (\n\t\"id\" varchar(64) PRIMARY KEY NOT NULL,\n\t\"fileName\" varchar(255) NOT NULL,\n\t\"uploadedBy\" varchar(64) NOT NULL,\n\t\"recordsProcessed\" integer NOT NULL,\n\t\"recordsUpdated\" integer NOT NULL,\n\t\"recordsFailed\" integer NOT NULL,\n\t\"errorLog\" text,\n\t\"createdAt\" timestamp DEFAULT now()\n);",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 45 near \"\"bulkPriceUpdates\" (",
+    "\t\"id\" varchar(64) PRIMARY KEY NOT NULL,",
+    "\t\"fileName\" varchar(255) NOT NULL,",
+    "\t\"uploadedBy\" varchar(64) NOT NULL,",
+    "\t\"recordsProcessed\" integer NOT NULL,",
+    "\t\"recordsUpdated\" integer NOT NULL,",
+    "\t\"recordsFailed\" integer NOT NULL,",
+    "\t\"errorLog\" text,",
+    "\t\"createdAt\" timestamp DEFAULT now()",
+    ")\""
+  ]
+}

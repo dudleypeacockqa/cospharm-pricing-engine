@@ -1,4 +1,4 @@
-import { pgEnum, pgTable, text, timestamp, varchar, decimal, integer } from "drizzle-orm/pg-core";
+import { pgEnum, pgTable, text, timestamp, varchar, decimal, integer, boolean } from "drizzle-orm/pg-core";
 
 /**
  * Core user table backing auth flow.
@@ -46,6 +46,11 @@ export const customers = pgTable("customers", {
   name: text("name").notNull(),
   email: varchar("email", { length: 320 }),
   phone: varchar("phone", { length: 50 }),
+  address: text("address"),
+  primaryContact: varchar("primaryContact", { length: 100 }),
+  accountsContact: varchar("accountsContact", { length: 100 }),
+  accountManager: varchar("accountManager", { length: 100 }),
+  paymentTerms: varchar("paymentTerms", { length: 50 }).default("Net 30"),
   logFeeDiscount: decimal("logFeeDiscount", { precision: 5, scale: 2 }).default("0"),
   customerType: varchar("customerType", { length: 50 }).default("retail"),
   creditLimit: decimal("creditLimit", { precision: 10, scale: 2 }).default("0"),
@@ -112,4 +117,39 @@ export const orderItems = pgTable("orderItems", {
 
 export type OrderItem = typeof orderItems.$inferSelect;
 export type InsertOrderItem = typeof orderItems.$inferInsert;
+
+// Promotions table for specials and time-based offers
+export const promotions = pgTable("promotions", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  promotionType: varchar("promotionType", { length: 50 }).notNull(),
+  discountValue: decimal("discountValue", { precision: 10, scale: 2 }),
+  bonusPattern: varchar("bonusPattern", { length: 100 }), // e.g., "Buy 5 Get 1 Free"
+  productIds: text("productIds"), // JSON array of product IDs
+  startDate: timestamp("startDate").notNull(),
+  endDate: timestamp("endDate").notNull(),
+  active: boolean("active").default(true).notNull(),
+  priority: integer("priority").default(0), // Higher priority promotions apply first
+  createdAt: timestamp("createdAt").defaultNow(),
+  updatedAt: timestamp("updatedAt").defaultNow(),
+});
+
+export type Promotion = typeof promotions.$inferSelect;
+export type InsertPromotion = typeof promotions.$inferInsert;
+
+// Bulk price updates log
+export const bulkPriceUpdates = pgTable("bulkPriceUpdates", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  fileName: varchar("fileName", { length: 255 }).notNull(),
+  uploadedBy: varchar("uploadedBy", { length: 64 }).notNull(),
+  recordsProcessed: integer("recordsProcessed").notNull(),
+  recordsUpdated: integer("recordsUpdated").notNull(),
+  recordsFailed: integer("recordsFailed").notNull(),
+  errorLog: text("errorLog"),
+  createdAt: timestamp("createdAt").defaultNow(),
+});
+
+export type BulkPriceUpdate = typeof bulkPriceUpdates.$inferSelect;
+export type InsertBulkPriceUpdate = typeof bulkPriceUpdates.$inferInsert;
 

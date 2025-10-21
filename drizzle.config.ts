@@ -6,5 +6,6 @@ export default defineConfig({
   out: "./drizzle/migrations",
   dbCredentials: {
     url: process.env.DATABASE_URL || "",
+    ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
   },
 });

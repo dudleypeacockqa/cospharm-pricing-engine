@@ -1,7 +1,7 @@
-import { eq } from "drizzle-orm";
+import { eq, sql, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
-import { InsertUser, users } from "../drizzle/schema";
+import { InsertUser, users, promotions, InsertPromotion, bulkPriceUpdates, InsertBulkPriceUpdate } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -208,5 +208,107 @@ export async function getAllOrders() {
   if (!db) return [];
   const { orders } = await import("../drizzle/schema");
   return db.select().from(orders);
+}
+
+
+
+// Promotions functions
+
+export async function getPromotions() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  try {
+    const result = await db.select().from(promotions).orderBy(desc(promotions.createdAt));
+    return result;
+  } catch (error) {
+    console.error("[Database] Failed to get promotions:", error);
+    return [];
+  }
+}
+
+export async function getActivePromotions() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  try {
+    const now = new Date();
+    const result = await db.select().from(promotions)
+      .where(sql`${promotions.active} = true AND ${promotions.startDate} <= ${now} AND ${promotions.endDate} >= ${now}`)
+      .orderBy(desc(promotions.priority));
+    return result;
+  } catch (error) {
+    console.error("[Database] Failed to get active promotions:", error);
+    return [];
+  }
+}
+
+export async function createPromotion(promotion: InsertPromotion) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  try {
+    const result = await db.insert(promotions).values(promotion).returning();
+    return result[0];
+  } catch (error) {
+    console.error("[Database] Failed to create promotion:", error);
+    throw error;
+  }
+}
+
+export async function updatePromotion(id: string, updates: Partial<InsertPromotion>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  try {
+    const result = await db.update(promotions)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(promotions.id, id))
+      .returning();
+    return result[0];
+  } catch (error) {
+    console.error("[Database] Failed to update promotion:", error);
+    throw error;
+  }
+}
+
+export async function deletePromotion(id: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  try {
+    await db.delete(promotions).where(eq(promotions.id, id));
+    return true;
+  } catch (error) {
+    console.error("[Database] Failed to delete promotion:", error);
+    throw error;
+  }
+}
+
+// Bulk price updates functions
+export async function getBulkPriceUpdates() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  try {
+    const result = await db.select().from(bulkPriceUpdates).orderBy(desc(bulkPriceUpdates.createdAt));
+    return result;
+  } catch (error) {
+    console.error("[Database] Failed to get bulk price updates:", error);
+    return [];
+  }
+}
+
+export async function createBulkPriceUpdate(update: InsertBulkPriceUpdate) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  try {
+    const result = await db.insert(bulkPriceUpdates).values(update).returning();
+    return result[0];
+  } catch (error) {
+    console.error("[Database] Failed to create bulk price update:", error);
+    throw error;
+  }
 }
 

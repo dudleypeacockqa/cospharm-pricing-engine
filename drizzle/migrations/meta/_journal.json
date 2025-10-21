@@ -15,6 +15,13 @@
       "when": 1761069170663,
       "tag": "0001_lethal_cargill",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1761082658180,
+      "tag": "0002_steady_korath",
+      "breakpoints": true
     }
   ]
 }
