@@ -185,3 +185,28 @@ export async function getRecentPricingAudits(limit: number = 50) {
   const { desc } = await import("drizzle-orm");
   return db.select().from(pricingAudit).orderBy(desc(pricingAudit.createdAt)).limit(limit);
 }
+
+
+// Orders functions
+export async function createOrder(order: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const { orders } = await import("../drizzle/schema");
+  await db.insert(orders).values(order);
+}
+
+export async function getOrdersByCustomer(customerId: string) {
+  const db = await getDb();
+  if (!db) return [];
+  const { orders } = await import("../drizzle/schema");
+  const { eq } = await import("drizzle-orm");
+  return db.select().from(orders).where(eq(orders.customerId, customerId));
+}
+
+export async function getAllOrders() {
+  const db = await getDb();
+  if (!db) return [];
+  const { orders } = await import("../drizzle/schema");
+  return db.select().from(orders);
+}
+

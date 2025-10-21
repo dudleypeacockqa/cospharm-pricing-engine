@@ -146,6 +146,37 @@ export const appRouter = router({
       }),
   }),
 
+  // Orders router
+  orders: router({
+    getByCustomer: publicProcedure
+      .input(z.string())
+      .query(async ({ input }) => {
+        const { getOrdersByCustomer } = await import("./db");
+        return getOrdersByCustomer(input);
+      }),
+    create: publicProcedure
+      .input(
+        z.object({
+          customerId: z.string(),
+          productId: z.string(),
+          quantity: z.number(),
+          unitPrice: z.string(),
+          totalAmount: z.string(),
+          status: z.string().default("pending"),
+          notes: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const { createOrder } = await import("./db");
+        const { randomUUID } = await import("crypto");
+        await createOrder({
+          id: randomUUID(),
+          ...input,
+        });
+        return { success: true };
+      }),
+  }),
+
   // Pricing calculator
   pricing: router({
     calculate: publicProcedure

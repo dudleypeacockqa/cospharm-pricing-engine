@@ -1,11 +1,14 @@
 import Navigation from "@/components/Navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
-import { Users, Mail, Phone, TrendingDown } from "lucide-react";
+import { Users, Mail, Phone, TrendingDown, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useLocation } from "wouter";
 
 export default function Customers() {
   const { data: customers, isLoading } = trpc.customers.list.useQuery();
+  const [, setLocation] = useLocation();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -49,7 +52,7 @@ export default function Customers() {
                       </div>
                     )}
                     <div className="pt-3 border-t">
-                      <div className="flex justify-between items-center">
+                      <div className="flex justify-between items-center mb-3">
                         <span className="text-sm text-gray-600 flex items-center gap-1">
                           <TrendingDown className="h-4 w-4" />
                           Log Fee Discount
@@ -58,6 +61,14 @@ export default function Customers() {
                           {customer.logFeeDiscount}%
                         </span>
                       </div>
+                      <Button 
+                        className="w-full" 
+                        variant="outline"
+                        onClick={() => setLocation(`/portal/${customer.id}`)}
+                      >
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        View Customer Portal
+                      </Button>
                     </div>
                   </div>
                 </CardContent>
