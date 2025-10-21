@@ -5,20 +5,23 @@ import { InsertUser, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
+let _client: ReturnType<typeof postgres> | null = null;
 
 // Lazily create the drizzle instance so local tooling can run without a DB.
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      const client = postgres(process.env.DATABASE_URL, {
-        ssl: 'require',
-        max: 1,
+      _client = postgres(process.env.DATABASE_URL, {
+        max: 10,
+        idle_timeout: 20,
+        connect_timeout: 10,
       });
-      _db = drizzle(client);
+      _db = drizzle(_client);
       console.log("[Database] PostgreSQL connection established");
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
+      _client = null;
     }
   }
   return _db;
@@ -95,10 +98,20 @@ export async function getUser(id: string) {
 
 // Product queries
 export async function getAllProducts() {
-  const db = await getDb();
-  if (!db) return [];
-  const { products } = await import("../drizzle/schema");
-  return db.select().from(products);
+  try {
+    const db = await getDb();
+    if (!db) {
+      console.warn("[Database] getAllProducts: database not available");
+      return [];
+    }
+    const { products } = await import("../drizzle/schema");
+    const result = await db.select().from(products);
+    console.log(`[Database] getAllProducts: returned ${result.length} products`);
+    return result;
+  } catch (error) {
+    console.error("[Database] getAllProducts error:", error);
+    throw error;
+  }
 }
 
 export async function getProduct(id: string) {

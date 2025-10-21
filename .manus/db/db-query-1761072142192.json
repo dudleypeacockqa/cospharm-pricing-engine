@@ -1,0 +1,70 @@
+{
+  "query": "SELECT * FROM products LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3PHp7ztbFBNkDxM.root --database fwhU47bCmMHPtMZqQZK4Tp --execute SELECT * FROM products LIMIT 5;",
+  "rows": [
+    {
+      "id": "346133b6-4888-453c-9f00-22f08d79ca17",
+      "name": "Cipromed 500",
+      "barcode": "6003412790235",
+      "basePrice": "85.00",
+      "productDiscount": "15",
+      "bonusPattern": "1@40%",
+      "category": "Antibiotics",
+      "active": "yes",
+      "createdAt": "2025-10-21 16:55:39",
+      "updatedAt": "2025-10-21 16:55:39"
+    },
+    {
+      "id": "8fe31b50-b780-46b0-861d-c549373e14da",
+      "name": "Doxicap 100mg",
+      "barcode": "6008758002165",
+      "basePrice": "65.00",
+      "productDiscount": "8",
+      "bonusPattern": "1@20%",
+      "category": "Antibiotics",
+      "active": "yes",
+      "createdAt": "2025-10-21 16:55:39",
+      "updatedAt": "2025-10-21 16:55:39"
+    },
+    {
+      "id": "b545f884-61f6-4352-86cf-d4b932f20fb3",
+      "name": "ABHAYRAB VACCINE",
+      "barcode": "8906117650065",
+      "basePrice": "1400.00",
+      "productDiscount": "5",
+      "bonusPattern": "",
+      "category": "Vaccines",
+      "active": "yes",
+      "createdAt": "2025-10-21 16:55:39",
+      "updatedAt": "2025-10-21 16:55:39"
+    },
+    {
+      "id": "b92e9744-38ee-466e-aeba-5e07ebf744aa",
+      "name": "Clindamycin 150mg",
+      "barcode": "6008758001083",
+      "basePrice": "120.00",
+      "productDiscount": "10",
+      "bonusPattern": "1@30%",
+      "category": "Antibiotics",
+      "active": "yes",
+      "createdAt": "2025-10-21 16:55:39",
+      "updatedAt": "2025-10-21 16:55:39"
+    },
+    {
+      "id": "c334805b-7287-4443-a972-be57b4f4cc10",
+      "name": "CP-Azithromycin 500mg",
+      "barcode": "8906117650065",
+      "basePrice": "95.00",
+      "productDiscount": "12",
+      "bonusPattern": "1@50%",
+      "category": "Antibiotics",
+      "active": "yes",
+      "createdAt": "2025-10-21 16:55:39",
+      "updatedAt": "2025-10-21 16:55:39"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\tbarcode\tbasePrice\tproductDiscount\tbonusPattern\tcategory\tactive\tcreatedAt\tupdatedAt\n346133b6-4888-453c-9f00-22f08d79ca17\tCipromed 500\t6003412790235\t85.00\t15\t1@40%\tAntibiotics\tyes\t2025-10-21 16:55:39\t2025-10-21 16:55:39\n8fe31b50-b780-46b0-861d-c549373e14da\tDoxicap 100mg\t6008758002165\t65.00\t8\t1@20%\tAntibiotics\tyes\t2025-10-21 16:55:39\t2025-10-21 16:55:39\nb545f884-61f6-4352-86cf-d4b932f20fb3\tABHAYRAB VACCINE\t8906117650065\t1400.00\t5\t\tVaccines\tyes\t2025-10-21 16:55:39\t2025-10-21 16:55:39\nb92e9744-38ee-466e-aeba-5e07ebf744aa\tClindamycin 150mg\t6008758001083\t120.00\t10\t1@30%\tAntibiotics\tyes\t2025-10-21 16:55:39\t2025-10-21 16:55:39\nc334805b-7287-4443-a972-be57b4f4cc10\tCP-Azithromycin 500mg\t8906117650065\t95.00\t12\t1@50%\tAntibiotics\tyes\t2025-10-21 16:55:39\t2025-10-21 16:55:39\n",
+  "stderr": "",
+  "execution_time_ms": 130
+}

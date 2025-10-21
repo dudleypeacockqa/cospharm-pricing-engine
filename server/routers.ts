@@ -42,8 +42,15 @@ export const appRouter = router({
   // Products router
   products: router({
     list: publicProcedure.query(async () => {
-      const { getAllProducts } = await import("./db");
-      return getAllProducts();
+      try {
+        const { getAllProducts } = await import("./db");
+        const products = await getAllProducts();
+        console.log(`[Router] products.list: returning ${products.length} products`);
+        return products;
+      } catch (error) {
+        console.error("[Router] products.list error:", error);
+        throw new Error(`Failed query: ${error instanceof Error ? error.message : String(error)}`);
+      }
     }),
     get: publicProcedure.input(z.object({ id: z.string() })).query(async ({ input }) => {
       const { getProduct } = await import("./db");
