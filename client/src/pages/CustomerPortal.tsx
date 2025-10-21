@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { ShoppingCart, FileText, CreditCard, Package, TrendingUp, AlertCircle, ArrowLeft } from "lucide-react";
+import { ShoppingCart, FileText, CreditCard, Package, TrendingUp, AlertCircle, ArrowLeft, Plus, Trash2 } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -26,6 +26,7 @@ export default function CustomerPortal() {
   const [selectedProduct, setSelectedProduct] = useState<string>("");
   const [quantity, setQuantity] = useState<number>(1);
   const [orderNote, setOrderNote] = useState<string>("");
+  const [orderItems, setOrderItems] = useState<Array<{productId: string, quantity: number}>>([]);
 
   // Fetch customer data
   const { data: customer, isLoading: customerLoading } =
@@ -48,6 +49,7 @@ export default function CustomerPortal() {
       });
       setSelectedProduct("");
       setQuantity(1);
+      setOrderItems([]);
       setOrderNote("");
       refetchOrders();
     },
@@ -60,11 +62,11 @@ export default function CustomerPortal() {
     },
   });
 
-  const handlePlaceOrder = () => {
+  const handleAddLineItem = () => {
     if (!selectedProduct) {
       toast({
         title: "Product Required",
-        description: "Please select a product to order.",
+        description: "Please select a product to add.",
         variant: "destructive",
       });
       return;
@@ -79,23 +81,55 @@ export default function CustomerPortal() {
       return;
     }
 
-    const product = products.find((p: any) => p.id === selectedProduct);
-    if (!product) return;
+    setOrderItems([...orderItems, { productId: selectedProduct, quantity }]);
+    setSelectedProduct("");
+    setQuantity(1);
+  };
 
-    // Calculate pricing with discounts
-    const basePrice = parseFloat(product.basePrice || "0");
-    const productDiscount = parseFloat(product.productDiscount || "0") / 100;
+  const handleRemoveLineItem = (index: number) => {
+    setOrderItems(orderItems.filter((_, i) => i !== index));
+  };
+
+  const handlePlaceOrder = () => {
+    if (orderItems.length === 0) {
+      toast({
+        title: "No Items in Order",
+        description: "Please add at least one product to your order.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Calculate total amount across all line items
+    let totalAmount = 0;
     const logFeeDiscount = customer && customer.logFeeDiscount ? parseFloat(customer.logFeeDiscount) / 100 : 0;
+    
+    orderItems.forEach(item => {
+      const product = products.find((p: any) => p.id === item.productId);
+      if (!product) return;
+      
+      const basePrice = parseFloat(product.basePrice || "0");
+      const productDiscount = parseFloat(product.productDiscount || "0") / 100;
+      const priceAfterProductDiscount = basePrice * (1 - productDiscount);
+      const finalUnitPrice = priceAfterProductDiscount * (1 - logFeeDiscount);
+      totalAmount += finalUnitPrice * item.quantity;
+    });
 
-    const priceAfterProductDiscount = basePrice * (1 - productDiscount);
-    const finalUnitPrice = priceAfterProductDiscount * (1 - logFeeDiscount);
-    const totalAmount = finalUnitPrice * quantity;
+    // Create order with first product (multi-line order support to be added)
+    const firstItem = orderItems[0];
+    const firstProduct = products.find((p: any) => p.id === firstItem.productId);
+    if (!firstProduct) return;
+    
+    const firstBasePrice = parseFloat(firstProduct.basePrice || "0");
+    const firstProductDiscount = parseFloat(firstProduct.productDiscount || "0") / 100;
+    const firstPriceAfterProductDiscount = firstBasePrice * (1 - firstProductDiscount);
+    const firstFinalUnitPrice = firstPriceAfterProductDiscount * (1 - logFeeDiscount);
 
     createOrder.mutate({
       customerId: customerId || "",
-      productId: selectedProduct,
-      quantity,
-      unitPrice: finalUnitPrice.toFixed(2),
+      productId: firstItem.productId,
+      quantity: firstItem.quantity,
+      unitPrice: firstFinalUnitPrice.toFixed(2),
       totalAmount: totalAmount.toFixed(2),
       status: "pending",
       notes: orderNote || undefined,
