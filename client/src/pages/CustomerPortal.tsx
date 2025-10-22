@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { ShoppingCart, FileText, CreditCard, Package, TrendingUp, AlertCircle, ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { ShoppingCart, FileText, CreditCard, Package, TrendingUp, AlertCircle, ArrowLeft, Plus, Trash2, Home } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -190,6 +190,14 @@ export default function CustomerPortal() {
       </div>
 
       <div className="container mx-auto px-4 py-8">
+        <Button
+          variant="outline"
+          onClick={() => window.location.href = '/'}
+          className="mb-4"
+        >
+          <Home className="mr-2 h-4 w-4" />
+          Back to Home
+        </Button>
         {/* Credit Overview */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card>

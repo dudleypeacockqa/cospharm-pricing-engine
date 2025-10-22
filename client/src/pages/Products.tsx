@@ -1,7 +1,8 @@
 import Navigation from "@/components/Navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
-import { Package, TrendingDown } from "lucide-react";
+import { Package, TrendingDown, Home } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 export default function Products() {
@@ -11,6 +12,14 @@ export default function Products() {
     <div className="min-h-screen bg-gray-50">
       <Navigation />
       <div className="container mx-auto px-4 py-8">
+        <Button
+          variant="outline"
+          onClick={() => window.location.href = '/'}
+          className="mb-4"
+        >
+          <Home className="mr-2 h-4 w-4" />
+          Back to Home
+        </Button>
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Product Catalog</h1>
           <p className="text-gray-600">

@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { Upload, FileSpreadsheet, CheckCircle, XCircle, AlertCircle, Download } from "lucide-react";
+import { Upload, FileSpreadsheet, CheckCircle, XCircle, AlertCircle, Download, Home } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -115,6 +115,14 @@ PROD003,Example Product 3,75.50,0.00,`;
   return (
     <div className="container mx-auto p-6">
       <div className="mb-6">
+        <Button
+          variant="outline"
+          onClick={() => window.location.href = '/'}
+          className="mb-4"
+        >
+          <Home className="mr-2 h-4 w-4" />
+          Back to Home
+        </Button>
         <h1 className="text-3xl font-bold text-gray-900">Bulk Price Upload</h1>
         <p className="text-gray-600 mt-1">Import product prices from Excel or CSV files</p>
       </div>
@@ -151,7 +159,7 @@ PROD003,Example Product 3,75.50,0.00,`;
               <Button
                 onClick={handleUpload}
                 disabled={!file || isUploading}
-                className="w-full bg-[#1e3a8a] hover:bg-[#1e40af]"
+                className="w-full bg-[#dc2626] hover:bg-[#b91c1c] text-white"
               >
                 {isUploading ? "Processing..." : "Upload and Process"}
               </Button>

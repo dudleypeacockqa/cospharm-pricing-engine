@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Calendar, Tag, TrendingDown, Gift } from "lucide-react";
+import { Plus, Calendar, Tag, TrendingDown, Gift, Home } from "lucide-react";
 
 export default function Promotions() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -148,6 +148,14 @@ export default function Promotions() {
 
   return (
     <div className="container mx-auto p-6">
+      <Button
+        variant="outline"
+        onClick={() => window.location.href = '/'}
+        className="mb-4"
+      >
+        <Home className="mr-2 h-4 w-4" />
+        Back to Home
+      </Button>
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Promotions & Specials</h1>

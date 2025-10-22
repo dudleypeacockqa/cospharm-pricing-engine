@@ -15,7 +15,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { trpc } from "@/lib/trpc";
-import { Calculator as CalcIcon, ArrowRight, TrendingDown, Plus, Trash2, FileText, Mail, Download, ShoppingCart } from "lucide-react";
+import { Calculator as CalcIcon, ArrowRight, TrendingDown, Plus, Trash2, FileText, Mail, Download, ShoppingCart, Home } from "lucide-react";
 import { useState } from "react";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -208,6 +208,14 @@ export default function Calculator() {
       <Navigation />
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
+          <Button
+            variant="outline"
+            onClick={() => window.location.href = '/'}
+            className="mb-4"
+          >
+            <Home className="mr-2 h-4 w-4" />
+            Back to Home
+          </Button>
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-2">Pricing Calculator & Quote Builder</h1>
             <p className="text-gray-600">
