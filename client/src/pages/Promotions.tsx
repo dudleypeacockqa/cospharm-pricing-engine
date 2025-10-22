@@ -155,7 +155,7 @@ export default function Promotions() {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-[#1e3a8a] hover:bg-[#1e40af]">
+            <Button className="bg-[#dc2626] hover:bg-[#b91c1c] text-white">
               <Plus className="mr-2 h-4 w-4" />
               Create Promotion
             </Button>
@@ -256,7 +256,7 @@ export default function Promotions() {
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" className="bg-[#1e3a8a] hover:bg-[#1e40af]">
+                <Button type="submit" className="bg-[#dc2626] hover:bg-[#b91c1c] text-white">
                   Create Promotion
                 </Button>
               </DialogFooter>
@@ -341,7 +341,7 @@ export default function Promotions() {
               </p>
               <Button
                 onClick={() => setIsDialogOpen(true)}
-                className="bg-[#1e3a8a] hover:bg-[#1e40af]"
+                className="bg-[#dc2626] hover:bg-[#b91c1c] text-white"
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Create First Promotion
