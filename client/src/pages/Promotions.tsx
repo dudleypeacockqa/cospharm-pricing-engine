@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { Plus, Calendar, Tag, TrendingDown, Gift, Home } from "lucide-react";
+import { MultiSelect, type Option } from "@/components/ui/multi-select";
 
 export default function Promotions() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -34,9 +35,11 @@ export default function Promotions() {
     bonusPattern: "",
     startDate: "",
     endDate: "",
+    productIds: [] as string[],
   });
 
   const { data: promotions, isLoading } = trpc.promotions.list.useQuery();
+  const { data: products } = trpc.products.list.useQuery();
   const createPromotion = trpc.promotions.create.useMutation({
     onSuccess: () => {
       toast({
@@ -75,6 +78,7 @@ export default function Promotions() {
       bonusPattern: "",
       startDate: "",
       endDate: "",
+      productIds: [],
     });
   };
 
@@ -239,6 +243,16 @@ export default function Promotions() {
                     />
                   </div>
                 )}
+                <div className="grid gap-2">
+                  <Label htmlFor="products">Applicable Products (Optional)</Label>
+                  <MultiSelect
+                    options={products?.map((p) => ({ value: p.id, label: p.name })) || []}
+                    selected={formData.productIds}
+                    onChange={(selected) => setFormData({ ...formData, productIds: selected })}
+                    placeholder="Select products (leave empty for all products)"
+                  />
+                  <p className="text-xs text-gray-500">If no products are selected, the promotion will apply to all products</p>
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="startDate">Start Date *</Label>
