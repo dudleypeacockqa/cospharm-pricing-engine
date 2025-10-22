@@ -325,6 +325,18 @@ export default function Calculator() {
                         </span>
                       </div>
 
+                      {calculation.promotionDiscount > 0 && (
+                        <div className="flex justify-between items-center py-2 border-b bg-white px-3 rounded">
+                          <div className="flex items-center gap-2">
+                            <TrendingDown className="h-4 w-4 text-red-600" />
+                            <span className="text-red-600 font-semibold">🎉 Promotion: {calculation.appliedPromotion} ({calculation.promotionDiscount}%)</span>
+                          </div>
+                          <span className="font-semibold text-red-600">
+                            N$ {calculation.priceAfterPromotion.toFixed(2)}
+                          </span>
+                        </div>
+                      )}
+
                       {calculation.logFeeDiscount > 0 && (
                         <div className="flex justify-between items-center py-2 border-b bg-white px-3 rounded">
                           <div className="flex items-center gap-2">

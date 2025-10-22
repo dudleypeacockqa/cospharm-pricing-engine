@@ -187,7 +187,7 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        const { getProduct, getCustomer, createPricingAudit } = await import("./db");
+        const { getProduct, getCustomer, createPricingAudit, getActivePromotions } = await import("./db");
         const { calculatePrice, parsePrice, parseDiscount, formatPrice } = await import("./pricing");
         const { randomUUID } = await import("crypto");
 
@@ -205,7 +205,40 @@ export const appRouter = router({
           }
         }
 
-        const calculation = calculatePrice(basePrice, productDiscount, logFeeDiscount);
+        // Check for active promotions
+        let promotionDiscount = 0;
+        let appliedPromotion: string | undefined;
+        const activePromotions = await getActivePromotions();
+        
+        for (const promo of activePromotions) {
+          // Check if promotion applies to this product
+          if (promo.productIds) {
+            try {
+              const productIds = JSON.parse(promo.productIds);
+              if (!productIds.includes(input.productId)) {
+                continue; // Skip this promotion if product not in list
+              }
+            } catch (e) {
+              continue; // Skip if JSON parse fails
+            }
+          }
+          // If no productIds specified, promotion applies to all products
+          
+          // Apply the first matching promotion (highest priority)
+          if (promo.promotionType === 'percentage' && promo.discountValue) {
+            promotionDiscount = parseFloat(promo.discountValue);
+            appliedPromotion = promo.name;
+            break;
+          } else if (promo.promotionType === 'fixed_amount' && promo.discountValue) {
+            // For fixed amount, convert to percentage of base price
+            const fixedAmount = parseFloat(promo.discountValue);
+            promotionDiscount = (fixedAmount / basePrice) * 100;
+            appliedPromotion = promo.name;
+            break;
+          }
+        }
+
+        const calculation = calculatePrice(basePrice, productDiscount, logFeeDiscount, promotionDiscount, appliedPromotion);
 
         // Log the calculation
         await createPricingAudit({
@@ -244,6 +277,7 @@ export const appRouter = router({
         endDate: z.date(),
         active: z.boolean(),
         priority: z.number(),
+        productIds: z.array(z.string()).optional(),
       }))
       .mutation(async ({ input }) => {
         const { createPromotion } = await import("./db");
@@ -255,6 +289,7 @@ export const appRouter = router({
           promotionType: input.promotionType,
           discountValue: input.discountValue ? input.discountValue.toString() : null,
           bonusPattern: input.bonusPattern,
+          productIds: input.productIds && input.productIds.length > 0 ? JSON.stringify(input.productIds) : null,
           startDate: input.startDate,
           endDate: input.endDate,
           active: input.active,

@@ -104,6 +104,7 @@ export default function Promotions() {
       endDate: new Date(formData.endDate),
       active: true,
       priority: 0,
+      productIds: formData.productIds,
     });
   };
 
