@@ -283,15 +283,14 @@ export default function Calculator() {
                   </div>
 
                   <div className="flex gap-2">
-                    <Button onClick={handleCalculate} disabled={!selectedProduct} className="flex-1 gap-2">
+                    <Button onClick={handleCalculate} disabled={!selectedProduct} className="flex-1 gap-2 bg-blue-600 hover:bg-blue-700 text-white">
                       Calculate Price
                       <ArrowRight className="h-4 w-4" />
                     </Button>
                     {calculation && (
-                      <Button 
-                        onClick={handleAddToQuote} 
-                        variant="outline"
-                        className="gap-2"
+                      <Button
+                        onClick={handleAddToQuote}
+                        className="gap-2 bg-green-600 hover:bg-green-700 text-white"
                       >
                         <Plus className="h-4 w-4" />
                         Add to Quote
