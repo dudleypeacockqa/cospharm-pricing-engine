@@ -166,8 +166,9 @@ export default function CustomerPortal() {
     );
   }
 
-  const creditLimit = parseFloat(customer.creditLimit || "0");
-  const currentBalance = parseFloat(customer.currentBalance || "0");
+  // Mock credit data for demo (these fields don't exist in current database schema)
+  const creditLimit = 50000;
+  const currentBalance = 12500;
   const availableCredit = creditLimit - currentBalance;
   const creditUtilization = (currentBalance / creditLimit) * 100;
 
