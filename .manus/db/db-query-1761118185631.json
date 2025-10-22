@@ -1,0 +1,28 @@
+{
+  "query": "SELECT id, name, email, address, primary_contact_name, credit_limit, current_balance FROM customers LIMIT 2;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3PHp7ztbFBNkDxM.root --database fwhU47bCmMHPtMZqQZK4Tp --execute SELECT id, name, email, address, primary_contact_name, credit_limit, current_balance FROM customers LIMIT 2;",
+  "rows": [
+    {
+      "id": "2fba5c38-63a9-4bd9-b24a-21d69a09d5cd",
+      "name": "MediCare Retail",
+      "email": "sales@medicare.na",
+      "address": "123 Main Street, Windhoek, Namibia",
+      "primary_contact_name": "John Smith",
+      "credit_limit": "50000.00",
+      "current_balance": "12500.00"
+    },
+    {
+      "id": "6b90167b-1d68-42ec-852f-3482c93a8fd6",
+      "name": "HealthPlus Distributors",
+      "email": "info@healthplus.na",
+      "address": "123 Main Street, Windhoek, Namibia",
+      "primary_contact_name": "John Smith",
+      "credit_limit": "50000.00",
+      "current_balance": "12500.00"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\temail\taddress\tprimary_contact_name\tcredit_limit\tcurrent_balance\n2fba5c38-63a9-4bd9-b24a-21d69a09d5cd\tMediCare Retail\tsales@medicare.na\t123 Main Street, Windhoek, Namibia\tJohn Smith\t50000.00\t12500.00\n6b90167b-1d68-42ec-852f-3482c93a8fd6\tHealthPlus Distributors\tinfo@healthplus.na\t123 Main Street, Windhoek, Namibia\tJohn Smith\t50000.00\t12500.00\n",
+  "stderr": "",
+  "execution_time_ms": 262
+}

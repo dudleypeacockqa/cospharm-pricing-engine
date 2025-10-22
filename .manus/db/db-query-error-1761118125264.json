@@ -1,0 +1,8 @@
+{
+  "query": "UPDATE customers SET \n  address = '123 Pharmaceutical Ave, Windhoek, Namibia',\n  primary_contact_name = 'John Doe',\n  primary_contact_phone = '+264 61 234 5678',\n  primary_contact_email = 'orders@' || LOWER(REPLACE(name, ' ', '')) || '.com.na',\n  accounts_contact_name = 'Jane Smith',\n  accounts_contact_phone = '+264 61 234 5679',\n  accounts_contact_email = 'accounts@' || LOWER(REPLACE(name, ' ', '')) || '.com.na',\n  account_manager = 'Sarah Williams',\n  payment_due_date = CURRENT_DATE + INTERVAL '30 days'\nWHERE address IS NULL;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3PHp7ztbFBNkDxM.root --database fwhU47bCmMHPtMZqQZK4Tp --execute UPDATE customers SET \n  address = '123 Pharmaceutical Ave, Windhoek, Namibia',\n  primary_contact_name = 'John Doe',\n  primary_contact_phone = '+264 61 234 5678',\n  primary_contact_email = 'orders@' || LOWER(REPLACE(name, ' ', '')) || '.com.na',\n  accounts_contact_name = 'Jane Smith',\n  accounts_contact_phone = '+264 61 234 5679',\n  accounts_contact_email = 'accounts@' || LOWER(REPLACE(name, ' ', '')) || '.com.na',\n  account_manager = 'Sarah Williams',\n  payment_due_date = CURRENT_DATE + INTERVAL '30 days'\nWHERE address IS NULL;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 11 column 6 near \"WHERE address IS NULL\""
+  ]
+}
