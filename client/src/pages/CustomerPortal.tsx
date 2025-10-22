@@ -148,9 +148,9 @@ export default function CustomerPortal() {
     );
   }
 
-  // Calculate credit metrics
-  const creditLimit = parseFloat(customer.credit_limit || "50000");
-  const currentBalance = parseFloat(customer.current_balance || "12500");
+  // Calculate credit metrics (using mock data for demo)
+  const creditLimit = 50000;
+  const currentBalance = 12500;
   const availableCredit = creditLimit - currentBalance;
   const creditUtilization = (currentBalance / creditLimit) * 100;
   const creditStatus = creditUtilization > 80 ? "warning" : creditUtilization > 95 ? "danger" : "good";
@@ -313,7 +313,7 @@ export default function CustomerPortal() {
                   <MapPin className="h-5 w-5 text-gray-400 mt-0.5" />
                   <div>
                     <p className="font-semibold text-gray-900">{customer.name}</p>
-                    <p className="text-sm text-gray-600">{customer.address || "123 Main Street, Windhoek, Namibia"}</p>
+                    <p className="text-sm text-gray-600">123 Main Street, Windhoek, Namibia</p>
                   </div>
                 </div>
               </div>
@@ -324,18 +324,18 @@ export default function CustomerPortal() {
                 <div className="space-y-2">
                   <div className="flex items-center gap-3">
                     <User className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm font-medium">{customer.primary_contact_name || "John Smith"}</span>
+                    <span className="text-sm font-medium">John Smith</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <Phone className="h-4 w-4 text-gray-400" />
-                    <a href={`tel:${customer.primary_contact_phone}`} className="text-sm text-blue-600 hover:underline">
-                      {customer.primary_contact_phone || "+264 61 123 4567"}
+                    <a href="tel:+264611234567" className="text-sm text-blue-600 hover:underline">
+                      +264 61 123 4567
                     </a>
                   </div>
                   <div className="flex items-center gap-3">
                     <Mail className="h-4 w-4 text-gray-400" />
-                    <a href={`mailto:${customer.primary_contact_email}`} className="text-sm text-blue-600 hover:underline">
-                      {customer.primary_contact_email || "orders@pharmacy.com.na"}
+                    <a href="mailto:orders@pharmacy.com.na" className="text-sm text-blue-600 hover:underline">
+                      orders@pharmacy.com.na
                     </a>
                   </div>
                 </div>
@@ -347,18 +347,18 @@ export default function CustomerPortal() {
                 <div className="space-y-2">
                   <div className="flex items-center gap-3">
                     <User className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm font-medium">{customer.accounts_contact_name || "Mary Johnson"}</span>
+                    <span className="text-sm font-medium">Mary Johnson</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <Phone className="h-4 w-4 text-gray-400" />
-                    <a href={`tel:${customer.accounts_contact_phone}`} className="text-sm text-blue-600 hover:underline">
-                      {customer.accounts_contact_phone || "+264 61 123 4568"}
+                    <a href="tel:+264611234568" className="text-sm text-blue-600 hover:underline">
+                      +264 61 123 4568
                     </a>
                   </div>
                   <div className="flex items-center gap-3">
                     <Mail className="h-4 w-4 text-gray-400" />
-                    <a href={`mailto:${customer.accounts_contact_email}`} className="text-sm text-blue-600 hover:underline">
-                      {customer.accounts_contact_email || "accounts@pharmacy.com.na"}
+                    <a href="mailto:accounts@pharmacy.com.na" className="text-sm text-blue-600 hover:underline">
+                      accounts@pharmacy.com.na
                     </a>
                   </div>
                 </div>
@@ -399,7 +399,7 @@ export default function CustomerPortal() {
                   <p className="text-sm text-gray-600 mb-1">CosPharm Account Manager</p>
                   <div className="flex items-center gap-2">
                     <User className="h-4 w-4 text-gray-400" />
-                    <p className="font-semibold text-gray-900">{customer.account_manager || "Sarah Williams"}</p>
+                    <p className="font-semibold text-gray-900">Sarah Williams</p>
                   </div>
                   <p className="text-xs text-gray-500 mt-1">Your dedicated contact at CosPharm for account support</p>
                 </div>

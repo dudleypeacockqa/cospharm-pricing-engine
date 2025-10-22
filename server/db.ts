@@ -163,7 +163,18 @@ export async function getCustomer(id: string) {
   const db = await getDb();
   if (!db) return undefined;
   const { customers } = await import("../drizzle/schema");
-  const result = await db.select().from(customers).where(eq(customers.id, id)).limit(1);
+  // Select only core columns that exist in production
+  const result = await db.select({
+    id: customers.id,
+    name: customers.name,
+    email: customers.email,
+    phone: customers.phone,
+    logFeeDiscount: customers.logFeeDiscount,
+    customerType: customers.customerType,
+    active: customers.active,
+    createdAt: customers.createdAt,
+    updatedAt: customers.updatedAt,
+  }).from(customers).where(eq(customers.id, id)).limit(1);
   return result.length > 0 ? result[0] : undefined;
 }
 
