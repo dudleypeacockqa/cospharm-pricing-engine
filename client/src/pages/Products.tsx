@@ -99,13 +99,13 @@ export default function Products() {
       onFilter: (value, record) => record.category === value,
     },
     {
-      title: 'Base Price (£)',
+      title: 'Base Price (N$)',
       dataIndex: 'basePrice',
       key: 'basePrice',
       width: 130,
       align: 'right',
       sorter: (a, b) => parseFloat(a.basePrice) - parseFloat(b.basePrice),
-      render: (price: string) => `£${parseFloat(price).toFixed(2)}`,
+      render: (price: string) => `N$${parseFloat(price).toFixed(2)}`,
     },
     {
       title: 'Product Discount (%)',
@@ -313,12 +313,12 @@ export default function Products() {
                 <Select.Option value="General">General</Select.Option>
               </Select>
             </Form.Item>
-            <Form.Item name="basePrice" label="Base Price (£)" rules={[{ required: true }]}>
+            <Form.Item name="basePrice" label="Base Price (N$)" rules={[{ required: true }]}>
               <InputNumber
                 min={0}
                 precision={2}
                 style={{ width: '100%' }}
-                prefix="£"
+                prefix="N$"
               />
             </Form.Item>
             <Form.Item name="productDiscount" label="Product Discount (%)" rules={[{ required: true }]}>
