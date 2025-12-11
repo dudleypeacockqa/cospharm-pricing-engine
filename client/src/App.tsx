@@ -12,6 +12,7 @@ import Reports from "./pages/Reports";
 import CustomerPortal from "./pages/CustomerPortal";
 import Promotions from "./pages/Promotions";
 import BulkUpload from "./pages/BulkUpload";
+import ApiDocs from "./pages/ApiDocs";
 
 function Router() {
   return (
@@ -23,6 +24,7 @@ function Router() {
       <Route path={"/promotions"} component={Promotions} />
       <Route path={"/bulk-upload"} component={BulkUpload} />
       <Route path={"/reports"} component={Reports} />
+      <Route path={"/api-docs"} component={ApiDocs} />
       <Route path={"/portal/:customerId"} component={CustomerPortal} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />

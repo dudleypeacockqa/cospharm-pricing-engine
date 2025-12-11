@@ -27,7 +27,7 @@ export default function Home() {
     {
       icon: Zap,
       title: "Sage Evolution Integration",
-      description: "Seamless bidirectional sync with your ERP system for automated pricing updates and order processing",
+      description: "Sales staff never leave Sage - pricing is automatically calculated via API during order entry",
       color: "bg-green-500"
     }
   ];
@@ -61,14 +61,14 @@ export default function Home() {
               </span>
             </div>
             <h1 className="text-5xl md:text-6xl font-bold mb-6 leading-tight">
-              Transform Your Pharmaceutical<br />
+              CosPharm Pricing Engine<br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-pink-400">
-                Pricing Operations
+                Admin Control Center
               </span>
             </h1>
             <p className="text-xl md:text-2xl mb-8 text-gray-200 leading-relaxed">
-              Automate complex sequential discount calculations with mathematical precision.<br />
-              Eliminate manual Excel workflows and gain complete pricing transparency.
+              Manage pricing rules and promotions centrally.<br />
+              Sales staff work seamlessly within Sage 200 Evolution - no external portal needed.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Link href="/calculator">
@@ -77,9 +77,9 @@ export default function Home() {
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
-              <Link href="/products">
+              <Link href="/api-docs">
                 <Button size="lg" variant="outline" className="bg-white/10 hover:bg-white/20 text-white border-white/30 px-8 py-6 text-lg backdrop-blur-sm">
-                  View Products
+                  API Documentation
                 </Button>
               </Link>
             </div>

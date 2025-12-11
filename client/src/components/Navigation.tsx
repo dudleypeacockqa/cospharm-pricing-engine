@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Calculator, Package, Users, BarChart3, Home, Tag, Upload } from "lucide-react";
+import { Calculator, Package, Users, BarChart3, Home, Tag, Upload, Code } from "lucide-react";
 
 export default function Navigation() {
   const [location] = useLocation();
@@ -13,6 +13,7 @@ export default function Navigation() {
     { path: "/promotions", label: "Promotions", icon: Tag },
     { path: "/bulk-upload", label: "Bulk Upload", icon: Upload },
     { path: "/reports", label: "Reports", icon: BarChart3 },
+    { path: "/api-docs", label: "API Docs", icon: Code },
   ];
 
   return (
@@ -23,7 +24,7 @@ export default function Navigation() {
             <Link href="/">
               <div className="flex items-center gap-2 font-bold text-xl text-primary cursor-pointer">
                 <Calculator className="h-6 w-6" />
-                CosPharm Pricing Engine
+                CosPharm Admin Portal
               </div>
             </Link>
             <div className="hidden md:flex items-center gap-1">
