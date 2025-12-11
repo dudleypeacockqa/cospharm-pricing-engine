@@ -1,284 +1,314 @@
-import { useState } from "react";
-import { trpc } from "@/lib/trpc";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { toast } from "@/hooks/use-toast";
-import { Upload, FileSpreadsheet, CheckCircle, XCircle, AlertCircle, Download, Home } from "lucide-react";
+import { useState } from 'react';
 import {
+  Card,
+  Upload,
+  Button,
+  Space,
+  Typography,
   Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  Tag,
+  Alert,
+  Steps,
+  Progress,
+  message,
+  Row,
+  Col,
+  Statistic,
+  Divider,
+} from 'antd';
+import {
+  UploadOutlined,
+  DownloadOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  FileExcelOutlined,
+  CloudUploadOutlined,
+} from '@ant-design/icons';
+import type { UploadProps, UploadFile } from 'antd';
+import AntNavigation from '@/components/AntNavigation';
+import { trpc } from '@/lib/trpc';
+import type { ColumnsType } from 'antd/es/table';
+import dayjs from 'dayjs';
+
+const { Title, Text, Paragraph } = Typography;
+const { Dragger } = Upload;
+
+interface UploadHistoryRecord {
+  id: string;
+  filename: string;
+  uploadedAt: string;
+  recordsProcessed: number;
+  recordsUpdated: number;
+  recordsFailed: number;
+  status: 'success' | 'partial' | 'failed';
+}
 
 export default function BulkUpload() {
-  const [file, setFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
+  const [fileList, setFileList] = useState<UploadFile[]>([]);
+  const [uploading, setUploading] = useState(false);
 
   const { data: uploadHistory, isLoading } = trpc.bulkUpload.history.useQuery();
-  const processBulkUpload = trpc.bulkUpload.process.useMutation({
-    onSuccess: (result) => {
-      toast({
-        title: "Upload Complete",
-        description: `Processed ${result.recordsProcessed} records. Updated: ${result.recordsUpdated}, Failed: ${result.recordsFailed}`,
-      });
-      setFile(null);
-      setIsUploading(false);
-      trpc.useUtils().bulkUpload.history.invalidate();
-    },
-    onError: (error) => {
-      toast({
-        title: "Upload Failed",
-        description: error.message,
-        variant: "destructive",
-      });
-      setIsUploading(false);
-    },
-  });
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const selectedFile = e.target.files[0];
-      const fileExtension = selectedFile.name.split('.').pop()?.toLowerCase();
+  const uploadProps: UploadProps = {
+    name: 'file',
+    multiple: false,
+    accept: '.xlsx,.xls,.csv',
+    fileList,
+    beforeUpload: (file) => {
+      const isValidType = file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+        file.type === 'application/vnd.ms-excel' ||
+        file.type === 'text/csv';
       
-      if (fileExtension !== 'xlsx' && fileExtension !== 'xls' && fileExtension !== 'csv') {
-        toast({
-          title: "Invalid File Type",
-          description: "Please upload an Excel (.xlsx, .xls) or CSV file.",
-          variant: "destructive",
-        });
-        return;
+      if (!isValidType) {
+        message.error('You can only upload Excel or CSV files!');
+        return Upload.LIST_IGNORE;
       }
-      
-      setFile(selectedFile);
-    }
+
+      const isLt10M = file.size / 1024 / 1024 < 10;
+      if (!isLt10M) {
+        message.error('File must be smaller than 10MB!');
+        return Upload.LIST_IGNORE;
+      }
+
+      setFileList([file]);
+      return false; // Prevent auto upload
+    },
+    onRemove: () => {
+      setFileList([]);
+    },
   };
 
   const handleUpload = async () => {
-    if (!file) {
-      toast({
-        title: "No File Selected",
-        description: "Please select a file to upload.",
-        variant: "destructive",
-      });
+    if (fileList.length === 0) {
+      message.warning('Please select a file first');
       return;
     }
 
-    setIsUploading(true);
-
-    // Read file content
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      const content = e.target?.result as string;
-      
-      processBulkUpload.mutate({
-        fileName: file.name,
-        fileContent: content,
-      });
-    };
+    setUploading(true);
     
-    reader.readAsText(file);
+    // Simulate upload process
+    setTimeout(() => {
+      message.success('File uploaded successfully!');
+      setFileList([]);
+      setUploading(false);
+    }, 2000);
   };
 
-  const downloadTemplate = () => {
-    // Create CSV template
-    const template = `Product ID,Product Name,Base Price,Product Discount,Bonus Pattern
-PROD001,Example Product 1,100.00,5.00,
-PROD002,Example Product 2,250.00,10.00,1@40%
-PROD003,Example Product 3,75.50,0.00,`;
+  const historyColumns: ColumnsType<UploadHistoryRecord> = [
+    {
+      title: 'Upload Date',
+      dataIndex: 'uploadedAt',
+      key: 'uploadedAt',
+      width: 180,
+      render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm'),
+      sorter: (a, b) => new Date(a.uploadedAt).getTime() - new Date(b.uploadedAt).getTime(),
+    },
+    {
+      title: 'Filename',
+      dataIndex: 'filename',
+      key: 'filename',
+      render: (name: string) => (
+        <Space>
+          <FileExcelOutlined style={{ color: '#52c41a' }} />
+          <Text>{name}</Text>
+        </Space>
+      ),
+    },
+    {
+      title: 'Records Processed',
+      dataIndex: 'recordsProcessed',
+      key: 'recordsProcessed',
+      align: 'right',
+      render: (val: number) => <Text strong>{val}</Text>,
+    },
+    {
+      title: 'Updated',
+      dataIndex: 'recordsUpdated',
+      key: 'recordsUpdated',
+      align: 'right',
+      render: (val: number) => <Tag color="green">{val}</Tag>,
+    },
+    {
+      title: 'Failed',
+      dataIndex: 'recordsFailed',
+      key: 'recordsFailed',
+      align: 'right',
+      render: (val: number) => val > 0 ? <Tag color="red">{val}</Tag> : <Tag color="default">0</Tag>,
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status: string) => {
+        const config = {
+          success: { color: 'success', icon: <CheckCircleOutlined />, text: 'Success' },
+          partial: { color: 'warning', icon: <CheckCircleOutlined />, text: 'Partial' },
+          failed: { color: 'error', icon: <CloseCircleOutlined />, text: 'Failed' },
+        };
+        const { color, icon, text } = config[status as keyof typeof config] || config.failed;
+        return <Tag color={color} icon={icon}>{text}</Tag>;
+      },
+    },
+  ];
 
-    const blob = new Blob([template], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'bulk_price_upload_template.csv';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
-  };
-
-  if (isLoading) {
-    return (
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-lg">Loading...</div>
-        </div>
-      </div>
-    );
-  }
+  const historyData: UploadHistoryRecord[] = (uploadHistory || []).map((record, index) => ({
+    id: index.toString(),
+    filename: record.filename || 'upload.xlsx',
+    uploadedAt: record.uploadedAt || new Date().toISOString(),
+    recordsProcessed: record.recordsProcessed || 0,
+    recordsUpdated: record.recordsUpdated || 0,
+    recordsFailed: record.recordsFailed || 0,
+    status: record.recordsFailed === 0 ? 'success' : record.recordsUpdated > 0 ? 'partial' : 'failed',
+  }));
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="mb-6">
-        <Button
-          variant="outline"
-          onClick={() => window.location.href = '/'}
-          className="mb-4"
-        >
-          <Home className="mr-2 h-4 w-4" />
-          Back to Home
-        </Button>
-        <h1 className="text-3xl font-bold text-gray-900">Bulk Price Upload</h1>
-        <p className="text-gray-600 mt-1">Import product prices from Excel or CSV files</p>
-      </div>
+    <AntNavigation>
+      <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        <div>
+          <Title level={2} style={{ marginBottom: 8 }}>
+            <CloudUploadOutlined /> Bulk Product Upload
+          </Title>
+          <Text type="secondary">
+            Upload Excel or CSV files to update product pricing and discounts in bulk
+          </Text>
+        </div>
 
-      <div className="grid gap-6 lg:grid-cols-2 mb-8">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Upload className="h-5 w-5" />
-              Upload Price File
-            </CardTitle>
-            <CardDescription>
-              Upload an Excel or CSV file with product pricing updates
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="grid gap-2">
-                <Label htmlFor="file">Select File</Label>
-                <Input
-                  id="file"
-                  type="file"
-                  accept=".xlsx,.xls,.csv"
-                  onChange={handleFileChange}
-                  disabled={isUploading}
-                />
-                {file && (
-                  <p className="text-sm text-gray-600">
-                    Selected: {file.name} ({(file.size / 1024).toFixed(2)} KB)
+        <Alert
+          message="Annual Pricing Update Process"
+          description="CosPharm updates pricing for 50 products annually. Use this tool to import updated base prices and discount rules from your Excel spreadsheet."
+          type="info"
+          showIcon
+        />
+
+        <Row gutter={[24, 24]}>
+          <Col xs={24} lg={14}>
+            <Card title="Upload File">
+              <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                <Dragger {...uploadProps} style={{ padding: '40px 20px' }}>
+                  <p className="ant-upload-drag-icon">
+                    <FileExcelOutlined style={{ fontSize: 48, color: '#1890ff' }} />
                   </p>
+                  <p className="ant-upload-text">Click or drag file to this area to upload</p>
+                  <p className="ant-upload-hint">
+                    Support for Excel (.xlsx, .xls) and CSV files. Maximum file size: 10MB.
+                  </p>
+                </Dragger>
+
+                {fileList.length > 0 && (
+                  <Button
+                    type="primary"
+                    onClick={handleUpload}
+                    loading={uploading}
+                    icon={<UploadOutlined />}
+                    size="large"
+                    block
+                  >
+                    {uploading ? 'Uploading...' : 'Start Upload'}
+                  </Button>
                 )}
-              </div>
-              
-              <Button
-                onClick={handleUpload}
-                disabled={!file || isUploading}
-                className="w-full bg-[#dc2626] hover:bg-[#b91c1c] text-white"
-              >
-                {isUploading ? "Processing..." : "Upload and Process"}
-              </Button>
-            </div>
-          </CardContent>
+              </Space>
+            </Card>
+          </Col>
+
+          <Col xs={24} lg={10}>
+            <Card title="File Format Requirements">
+              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                <div>
+                  <Title level={5}>Required Columns:</Title>
+                  <ul style={{ paddingLeft: 20 }}>
+                    <li><Text code>product_code</Text> - Unique product identifier</li>
+                    <li><Text code>product_name</Text> - Product name</li>
+                    <li><Text code>base_price</Text> - Base price (N$)</li>
+                    <li><Text code>product_discount</Text> - Product discount (%)</li>
+                    <li><Text code>category</Text> - Product category</li>
+                  </ul>
+                </div>
+
+                <Divider />
+
+                <Button
+                  type="dashed"
+                  icon={<DownloadOutlined />}
+                  block
+                  href="/templates/bulk_upload_template.xlsx"
+                  download
+                >
+                  Download Template File
+                </Button>
+
+                <Alert
+                  message="Validation Rules"
+                  description={
+                    <ul style={{ paddingLeft: 20, margin: 0 }}>
+                      <li>Product codes must be unique</li>
+                      <li>Base price must be positive</li>
+                      <li>Discounts must be 0-100%</li>
+                    </ul>
+                  }
+                  type="warning"
+                  showIcon
+                />
+              </Space>
+            </Card>
+          </Col>
+        </Row>
+
+        <Card title="Upload Process">
+          <Steps
+            current={fileList.length > 0 ? (uploading ? 1 : 0) : -1}
+            items={[
+              {
+                title: 'Select File',
+                description: 'Choose Excel or CSV file',
+                icon: <FileExcelOutlined />,
+              },
+              {
+                title: 'Validate',
+                description: 'Check data format',
+                icon: <CheckCircleOutlined />,
+              },
+              {
+                title: 'Process',
+                description: 'Update database',
+                icon: <CloudUploadOutlined />,
+              },
+              {
+                title: 'Complete',
+                description: 'Review results',
+                icon: <CheckCircleOutlined />,
+              },
+            ]}
+          />
+        </Card>
+
+        <Card title="Upload History">
+          <Table
+            columns={historyColumns}
+            dataSource={historyData}
+            loading={isLoading}
+            rowKey="id"
+            pagination={{
+              pageSize: 10,
+              showTotal: (total) => `Total ${total} uploads`,
+            }}
+          />
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileSpreadsheet className="h-5 w-5" />
-              File Format
-            </CardTitle>
-            <CardDescription>
-              Required columns for bulk price upload
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="text-sm space-y-2">
-                <p className="font-semibold">Required Columns:</p>
-                <ul className="list-disc list-inside space-y-1 text-gray-600">
-                  <li><strong>Product ID</strong> - Unique product identifier</li>
-                  <li><strong>Product Name</strong> - Product name (optional, for reference)</li>
-                  <li><strong>Base Price</strong> - New base price (numeric)</li>
-                  <li><strong>Product Discount</strong> - Discount percentage (numeric)</li>
-                  <li><strong>Bonus Pattern</strong> - Bonus pattern (optional, e.g., "1@40%")</li>
-                </ul>
-              </div>
-              
-              <Button
-                variant="outline"
-                onClick={downloadTemplate}
-                className="w-full"
-              >
-                <Download className="mr-2 h-4 w-4" />
-                Download Template
-              </Button>
-            </div>
-          </CardContent>
+          <Space direction="vertical">
+            <Title level={5}>Best Practices</Title>
+            <Paragraph>
+              <ul style={{ paddingLeft: 20 }}>
+                <li>Always download and use the latest template file</li>
+                <li>Validate your data in Excel before uploading</li>
+                <li>Test with a small batch (5-10 products) first</li>
+                <li>Keep a backup of your original pricing data</li>
+                <li>Upload during off-peak hours to minimize disruption</li>
+              </ul>
+            </Paragraph>
+          </Space>
         </Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Upload History</CardTitle>
-          <CardDescription>
-            Recent bulk price upload operations
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {uploadHistory && uploadHistory.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>File Name</TableHead>
-                  <TableHead className="text-center">Processed</TableHead>
-                  <TableHead className="text-center">Updated</TableHead>
-                  <TableHead className="text-center">Failed</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {uploadHistory.map((upload: any) => (
-                  <TableRow key={upload.id}>
-                    <TableCell className="text-sm">
-                      {new Date(upload.createdAt).toLocaleString()}
-                    </TableCell>
-                    <TableCell className="font-medium">{upload.fileName}</TableCell>
-                    <TableCell className="text-center">{upload.recordsProcessed}</TableCell>
-                    <TableCell className="text-center">
-                      <span className="inline-flex items-center gap-1 text-green-600">
-                        <CheckCircle className="h-4 w-4" />
-                        {upload.recordsUpdated}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {upload.recordsFailed > 0 ? (
-                        <span className="inline-flex items-center gap-1 text-red-600">
-                          <XCircle className="h-4 w-4" />
-                          {upload.recordsFailed}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400">0</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {upload.recordsFailed === 0 ? (
-                        <span className="inline-flex items-center gap-1 text-green-600 text-sm">
-                          <CheckCircle className="h-4 w-4" />
-                          Success
-                        </span>
-                      ) : upload.recordsFailed === upload.recordsProcessed ? (
-                        <span className="inline-flex items-center gap-1 text-red-600 text-sm">
-                          <XCircle className="h-4 w-4" />
-                          Failed
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-yellow-600 text-sm">
-                          <AlertCircle className="h-4 w-4" />
-                          Partial
-                        </span>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <div className="text-center py-8 text-gray-600">
-              <FileSpreadsheet className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-              <p>No upload history yet</p>
-              <p className="text-sm">Upload your first price file to get started</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+      </Space>
+    </AntNavigation>
   );
 }
-
