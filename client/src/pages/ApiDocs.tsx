@@ -1,199 +1,418 @@
-import Navigation from "@/components/Navigation";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Code, Home, Zap, Shield, CheckCircle2 } from "lucide-react";
+import { Typography, Card, Space, Tabs, Alert, Divider, Table, Tag } from 'antd';
+import {
+  ApiOutlined,
+  CheckCircleOutlined,
+  CodeOutlined,
+  DatabaseOutlined,
+  ThunderboltOutlined,
+} from '@ant-design/icons';
+import AntNavigation from '@/components/AntNavigation';
+
+const { Title, Paragraph, Text } = Typography;
 
 export default function ApiDocs() {
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <Navigation />
-      <div className="container mx-auto px-4 py-8">
-        <Button
-          variant="outline"
-          onClick={() => window.location.href = '/'}
-          className="mb-4"
-        >
-          <Home className="mr-2 h-4 w-4" />
-          Back to Home
-        </Button>
+  const endpointsColumns = [
+    {
+      title: 'Endpoint',
+      dataIndex: 'endpoint',
+      key: 'endpoint',
+      render: (text: string) => <Text code>{text}</Text>,
+    },
+    {
+      title: 'Method',
+      dataIndex: 'method',
+      key: 'method',
+      render: (method: string) => {
+        const colors: Record<string, string> = {
+          GET: 'blue',
+          POST: 'green',
+          PUT: 'orange',
+          DELETE: 'red',
+        };
+        return <Tag color={colors[method]}>{method}</Tag>;
+      },
+    },
+    {
+      title: 'Description',
+      dataIndex: 'description',
+      key: 'description',
+    },
+  ];
 
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Sage 200 Evolution Integration</h1>
-          <p className="text-gray-600">
-            API documentation for real-time pricing integration
-          </p>
+  const endpoints = [
+    {
+      key: '1',
+      endpoint: '/api/pricing/calculate',
+      method: 'POST',
+      description: 'Calculate 3-column sequential discount pricing',
+    },
+    {
+      key: '2',
+      endpoint: '/api/products/{id}',
+      method: 'GET',
+      description: 'Get product base price and discount 1 (product discount)',
+    },
+    {
+      key: '3',
+      endpoint: '/api/customers/{id}',
+      method: 'GET',
+      description: 'Get customer logistics fee discount (discount 2)',
+    },
+    {
+      key: '4',
+      endpoint: '/api/promotions/active',
+      method: 'GET',
+      description: 'Get active promotional discounts (discount 3)',
+    },
+  ];
+
+  const requestExample = `POST /api/pricing/calculate
+Content-Type: application/json
+Authorization: Bearer YOUR_API_KEY
+
+{
+  "productId": "PROD-001",
+  "customerId": "CUST-123",
+  "quantity": 10,
+  "requestDate": "2025-01-15"
+}`;
+
+  const responseExample = `{
+  "success": true,
+  "calculation": {
+    "productCode": "PROD-001",
+    "productName": "Pharmaceutical Product 1",
+    "quantity": 10,
+    
+    "basePrice": 100.00,
+    
+    "discount1": {
+      "type": "product_discount",
+      "percentage": 10.00,
+      "amount": 10.00,
+      "priceAfter": 90.00
+    },
+    
+    "discount2": {
+      "type": "logistics_fee",
+      "percentage": 5.00,
+      "amount": 4.50,
+      "priceAfter": 85.50
+    },
+    
+    "discount3": {
+      "type": "promotional",
+      "percentage": 3.00,
+      "amount": 2.57,
+      "priceAfter": 82.93,
+      "promotionName": "Summer Sale 2025"
+    },
+    
+    "finalUnitPrice": 82.93,
+    "lineTotal": 829.30,
+    "totalSavings": 170.70,
+    "totalSavingsPercentage": 17.07
+  },
+  
+  "sageIntegration": {
+    "discountColumn1": "10.00",
+    "discountColumn2": "5.00",
+    "discountColumn3": "3.00",
+    "lineTotal": "829.30"
+  }
+}`;
+
+  const sageIntegrationCode = `// Sage 200 Evolution Web Services API Integration
+// This code runs when a sales staff member adds a line item
+
+async function onLineItemAdded(itemCode, customerId, quantity) {
+  // Step 1: Call CosPharm Pricing Engine API
+  const response = await fetch('https://cospharm.financeflo.ai/api/pricing/calculate', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer YOUR_API_KEY'
+    },
+    body: JSON.stringify({
+      productId: itemCode,
+      customerId: customerId,
+      quantity: quantity,
+      requestDate: new Date().toISOString()
+    })
+  });
+  
+  const data = await response.json();
+  
+  // Step 2: Populate Sage 200 Custom Fields
+  // These 3 custom columns must be added to Sales Documents
+  sageAPI.setCustomField('Discount_1', data.sageIntegration.discountColumn1);
+  sageAPI.setCustomField('Discount_2', data.sageIntegration.discountColumn2);
+  sageAPI.setCustomField('Discount_3', data.sageIntegration.discountColumn3);
+  
+  // Step 3: Set Line Total
+  sageAPI.setLineTotal(data.sageIntegration.lineTotal);
+  
+  // Sales staff sees all 3 discount columns populated automatically
+  // No manual calculation required!
+}`;
+
+  return (
+    <AntNavigation>
+      <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        <div>
+          <Title level={2}>
+            <ApiOutlined /> API Documentation
+          </Title>
+          <Paragraph type="secondary">
+            Integration guide for Sage 200 Evolution Web Services API
+          </Paragraph>
         </div>
 
-        {/* Architecture Overview */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Zap className="h-5 w-5 text-blue-600" />
-              How It Works
-            </CardTitle>
-            <CardDescription>
-              Sales staff work entirely within Sage 200 Evolution - no external portal needed
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-start gap-3">
-                <CheckCircle2 className="h-5 w-5 text-green-600 mt-1" />
-                <div>
-                  <h3 className="font-semibold">Step 1: Sales Order Entry</h3>
-                  <p className="text-sm text-gray-600">
-                    Sales staff create orders in Sage 200 Evolution as normal
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <CheckCircle2 className="h-5 w-5 text-green-600 mt-1" />
-                <div>
-                  <h3 className="font-semibold">Step 2: Automatic API Call</h3>
-                  <p className="text-sm text-gray-600">
-                    Sage automatically calls the Pricing Engine API with customer and product details
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <CheckCircle2 className="h-5 w-5 text-green-600 mt-1" />
-                <div>
-                  <h3 className="font-semibold">Step 3: Price Calculation</h3>
-                  <p className="text-sm text-gray-600">
-                    Engine applies sequential discounts: Base Price → Product Discount → Promotion → Log Fee
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <CheckCircle2 className="h-5 w-5 text-green-600 mt-1" />
-                <div>
-                  <h3 className="font-semibold">Step 4: Return to Sage</h3>
-                  <p className="text-sm text-gray-600">
-                    Final price and breakdown are returned to Sage order screen in under 500ms
-                  </p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
+        <Alert
+          message="Seamless Sage Integration"
+          description="Sales staff never leave Sage 200 Evolution. The pricing engine works silently in the background via API calls, automatically populating the 3 discount columns when line items are added to quotes, sales orders, or invoices."
+          type="success"
+          showIcon
+          icon={<CheckCircleOutlined />}
+        />
+
+        <Card title="Overview">
+          <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+            <Paragraph>
+              The CosPharm Pricing Engine provides a RESTful API that integrates with Sage 200 Evolution's Web Services API. 
+              When a sales staff member adds a product to a sales document, Sage makes an API call to calculate the final price 
+              using the 3-column sequential discount logic.
+            </Paragraph>
+            
+            <Title level={4}>Key Features</Title>
+            <ul>
+              <li><CheckCircleOutlined style={{ color: '#52c41a' }} /> <strong>Real-time Calculation:</strong> Sub-500ms response time</li>
+              <li><CheckCircleOutlined style={{ color: '#52c41a' }} /> <strong>3-Column Discount Visibility:</strong> All discounts shown separately in Sage</li>
+              <li><CheckCircleOutlined style={{ color: '#52c41a' }} /> <strong>Automatic Population:</strong> No manual entry required</li>
+              <li><CheckCircleOutlined style={{ color: '#52c41a' }} /> <strong>Audit Trail:</strong> Every calculation logged for compliance</li>
+            </ul>
+          </Space>
         </Card>
 
-        {/* API Endpoint */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Code className="h-5 w-5 text-purple-600" />
-              Price Calculation Endpoint
-            </CardTitle>
-            <CardDescription>
-              Real-time pricing calculation with discount breakdown
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <Badge className="mb-2">POST</Badge>
-                <code className="block bg-gray-900 text-white p-4 rounded-lg text-sm">
-                  https://your-domain.com/api/pricing/calculate
-                </code>
-              </div>
-
-              <div>
-                <h3 className="font-semibold mb-2">Request Body</h3>
-                <pre className="bg-gray-900 text-white p-4 rounded-lg text-sm overflow-x-auto">
-{`{
-  "customerId": "CUST001",
-  "productId": "PROD123",
-  "quantity": 10,
-  "quoteDate": "2025-12-11T00:00:00Z" // Optional
-}`}
-                </pre>
-              </div>
-
-              <div>
-                <h3 className="font-semibold mb-2">Response</h3>
-                <pre className="bg-gray-900 text-white p-4 rounded-lg text-sm overflow-x-auto">
-{`{
-  "basePrice": 100.00,
-  "productDiscount": 15.0,
-  "promotionDiscount": 5.0,
-  "logFeeDiscount": 10.0,
-  "priceAfterProductDiscount": 85.00,
-  "priceAfterPromotion": 80.75,
-  "finalPrice": 72.68,
-  "totalDiscountAmount": 27.32,
-  "totalDiscountPercentage": 27.32,
-  "appliedPromotion": "Summer Sale 2025"
-}`}
-                </pre>
-              </div>
+        <Card title="Sequential Discount Logic">
+          <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+            <Alert
+              message="Important: Discounts are Applied Sequentially, NOT Additively"
+              description="Each discount is applied to the result of the previous calculation, not to the original base price."
+              type="warning"
+              showIcon
+            />
+            
+            <div>
+              <Title level={5}>Step 1: Product Discount (Column 1)</Title>
+              <Paragraph>
+                <Text code>Price After Discount 1 = Base Price × (1 - Product Discount %)</Text>
+              </Paragraph>
+              <Paragraph type="secondary">
+                Set annually by admin. Typically 5-15% based on product category.
+              </Paragraph>
             </div>
-          </CardContent>
+
+            <Divider />
+
+            <div>
+              <Title level={5}>Step 2: Logistics Fee Discount (Column 2)</Title>
+              <Paragraph>
+                <Text code>Price After Discount 2 = Price After Discount 1 × (1 - Logistics Fee %)</Text>
+              </Paragraph>
+              <Paragraph type="secondary">
+                Customer-specific logistics discount. Typically 3-10% based on volume tier.
+              </Paragraph>
+            </div>
+
+            <Divider />
+
+            <div>
+              <Title level={5}>Step 3: Promotional Discount (Column 3)</Title>
+              <Paragraph>
+                <Text code>Final Price = Price After Discount 2 × (1 - Promotional Discount %)</Text>
+              </Paragraph>
+              <Paragraph type="secondary">
+                Time-bound promotional campaigns. Typically 2-5% for limited periods.
+              </Paragraph>
+            </div>
+
+            <Divider />
+
+            <div>
+              <Title level={5}>Final Calculation</Title>
+              <Paragraph>
+                <Text code>Line Total = Final Price × Quantity</Text>
+              </Paragraph>
+            </div>
+          </Space>
         </Card>
 
-        {/* Authentication */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5 text-green-600" />
-              Authentication
-            </CardTitle>
-            <CardDescription>
-              Secure API access with token-based authentication
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <h3 className="font-semibold mb-2">Authorization Header</h3>
-                <code className="block bg-gray-900 text-white p-4 rounded-lg text-sm">
-                  Authorization: Bearer YOUR_API_KEY
-                </code>
-              </div>
-              <p className="text-sm text-gray-600">
-                Contact your administrator to obtain an API key for Sage integration.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Business Rules */}
         <Card>
-          <CardHeader>
-            <CardTitle>Business Rules & Timing</CardTitle>
-            <CardDescription>
-              How the system handles quotes, promotions, and price changes
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <h3 className="font-semibold">Quote Price Locking</h3>
-                <p className="text-sm text-gray-600">
-                  When a quote is created, the price is locked at the time of quote generation. 
-                  If the quote is converted to an order after the expiry date or after a price 
-                  change, the system uses the quote date to determine which price to apply.
-                </p>
-              </div>
-              <div>
-                <h3 className="font-semibold">Promotion Priority</h3>
-                <p className="text-sm text-gray-600">
-                  Active promotions are applied after product discounts but before log fees. 
-                  If multiple promotions apply to the same product, the highest priority 
-                  promotion is used.
-                </p>
-              </div>
-              <div>
-                <h3 className="font-semibold">Price List Changes</h3>
-                <p className="text-sm text-gray-600">
-                  When base prices are updated, existing quotes retain their original pricing. 
-                  New quotes and orders use the updated prices immediately.
-                </p>
-              </div>
-            </div>
-          </CardContent>
+          <Tabs
+            defaultActiveKey="1"
+            items={[
+              {
+                key: '1',
+                label: (
+                  <span>
+                    <DatabaseOutlined />
+                    API Endpoints
+                  </span>
+                ),
+                children: (
+                  <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                    <Paragraph>
+                      Base URL: <Text code>https://cospharm.financeflo.ai</Text>
+                    </Paragraph>
+                    <Table
+                      columns={endpointsColumns}
+                      dataSource={endpoints}
+                      pagination={false}
+                    />
+                  </Space>
+                ),
+              },
+              {
+                key: '2',
+                label: (
+                  <span>
+                    <CodeOutlined />
+                    Request Example
+                  </span>
+                ),
+                children: (
+                  <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                    <Paragraph>
+                      Example API request to calculate pricing for a line item:
+                    </Paragraph>
+                    <pre style={{
+                      background: '#f5f5f5',
+                      padding: 16,
+                      borderRadius: 4,
+                      overflow: 'auto',
+                    }}>
+                      <code>{requestExample}</code>
+                    </pre>
+                  </Space>
+                ),
+              },
+              {
+                key: '3',
+                label: (
+                  <span>
+                    <ThunderboltOutlined />
+                    Response Example
+                  </span>
+                ),
+                children: (
+                  <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                    <Paragraph>
+                      The API returns a detailed breakdown including values for all 3 discount columns:
+                    </Paragraph>
+                    <pre style={{
+                      background: '#f5f5f5',
+                      padding: 16,
+                      borderRadius: 4,
+                      overflow: 'auto',
+                      maxHeight: 500,
+                    }}>
+                      <code>{responseExample}</code>
+                    </pre>
+                  </Space>
+                ),
+              },
+              {
+                key: '4',
+                label: (
+                  <span>
+                    <ApiOutlined />
+                    Sage Integration Code
+                  </span>
+                ),
+                children: (
+                  <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                    <Alert
+                      message="Implementation Note"
+                      description="This integration code is added to Sage 200 Evolution's customization layer. Sales staff interaction remains unchanged - they simply add products to documents as usual."
+                      type="info"
+                      showIcon
+                    />
+                    <pre style={{
+                      background: '#f5f5f5',
+                      padding: 16,
+                      borderRadius: 4,
+                      overflow: 'auto',
+                      maxHeight: 500,
+                    }}>
+                      <code>{sageIntegrationCode}</code>
+                    </pre>
+                  </Space>
+                ),
+              },
+            ]}
+          />
         </Card>
-      </div>
-    </div>
+
+        <Card title="Sage 200 Evolution Custom Fields Setup">
+          <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+            <Paragraph>
+              To display the 3 discount columns in Sage 200 Evolution sales documents, the following custom fields must be added:
+            </Paragraph>
+            
+            <Table
+              columns={[
+                { title: 'Field Name', dataIndex: 'field', key: 'field' },
+                { title: 'Type', dataIndex: 'type', key: 'type' },
+                { title: 'Description', dataIndex: 'description', key: 'description' },
+              ]}
+              dataSource={[
+                {
+                  key: '1',
+                  field: 'Discount_1',
+                  type: 'Decimal (2)',
+                  description: 'Product Discount Percentage',
+                },
+                {
+                  key: '2',
+                  field: 'Discount_2',
+                  type: 'Decimal (2)',
+                  description: 'Logistics Fee Discount Percentage',
+                },
+                {
+                  key: '3',
+                  field: 'Discount_3',
+                  type: 'Decimal (2)',
+                  description: 'Promotional Discount Percentage',
+                },
+              ]}
+              pagination={false}
+            />
+
+            <Alert
+              message="Uriel Patsanza (Sage Consultant) will configure these custom fields during implementation."
+              type="info"
+              showIcon
+            />
+          </Space>
+        </Card>
+
+        <Card title="Authentication">
+          <Paragraph>
+            All API requests require a Bearer token in the Authorization header:
+          </Paragraph>
+          <pre style={{
+            background: '#f5f5f5',
+            padding: 16,
+            borderRadius: 4,
+          }}>
+            <code>Authorization: Bearer YOUR_API_KEY</code>
+          </pre>
+          <Paragraph type="secondary" style={{ marginTop: 16 }}>
+            API keys are generated in the admin portal and should be stored securely in Sage's configuration.
+          </Paragraph>
+        </Card>
+      </Space>
+    </AntNavigation>
   );
 }

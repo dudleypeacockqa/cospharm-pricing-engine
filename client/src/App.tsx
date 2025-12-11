@@ -1,3 +1,4 @@
+import { ConfigProvider, theme } from 'antd';
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
@@ -35,15 +36,47 @@ function Router() {
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="light">
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
-      </ThemeProvider>
+      <ConfigProvider
+        theme={{
+          algorithm: theme.defaultAlgorithm,
+          token: {
+            colorPrimary: '#1890ff',
+            colorSuccess: '#52c41a',
+            colorWarning: '#faad14',
+            colorError: '#f5222d',
+            colorInfo: '#1890ff',
+            borderRadius: 6,
+            fontSize: 14,
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+          },
+          components: {
+            Layout: {
+              headerBg: '#001529',
+              siderBg: '#001529',
+            },
+            Menu: {
+              darkItemBg: '#001529',
+              darkItemSelectedBg: '#1890ff',
+            },
+            Button: {
+              primaryShadow: '0 2px 0 rgba(24, 144, 255, 0.1)',
+            },
+            Table: {
+              headerBg: '#fafafa',
+              headerColor: '#000000d9',
+            },
+          },
+        }}
+      >
+        <ThemeProvider defaultTheme="light">
+          <TooltipProvider>
+            <Toaster />
+            <Router />
+          </TooltipProvider>
+        </ThemeProvider>
+      </ConfigProvider>
     </ErrorBoundary>
   );
 }
 
 export default App;
-

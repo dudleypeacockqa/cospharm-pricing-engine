@@ -1,379 +1,384 @@
-import { useState } from "react";
-import { trpc } from "@/lib/trpc";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from 'react';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
+  Table,
+  Button,
+  Space,
+  Typography,
+  Tag,
+  Modal,
+  Form,
+  Input,
+  InputNumber,
   Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { toast } from "@/hooks/use-toast";
-import { Plus, Calendar, Tag, TrendingDown, Gift, Home } from "lucide-react";
-import { MultiSelect, type Option } from "@/components/ui/multi-select";
+  DatePicker,
+  message,
+  Card,
+  Row,
+  Col,
+  Statistic,
+} from 'antd';
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  GiftOutlined,
+  CalendarOutlined,
+  PercentageOutlined,
+} from '@ant-design/icons';
+import AntNavigation from '@/components/AntNavigation';
+import { trpc } from '@/lib/trpc';
+import type { ColumnsType } from 'antd/es/table';
+import dayjs from 'dayjs';
+
+const { Title, Text } = Typography;
+const { RangePicker } = DatePicker;
+const { TextArea } = Input;
+
+interface Promotion {
+  id: string;
+  name: string;
+  description: string;
+  promotionType: string;
+  discountValue: string;
+  startDate: string;
+  endDate: string;
+  status: 'active' | 'scheduled' | 'expired';
+}
 
 export default function Promotions() {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    promotionType: "percentage",
-    discountValue: "",
-    bonusPattern: "",
-    startDate: "",
-    endDate: "",
-    productIds: [] as string[],
-  });
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [form] = Form.useForm();
 
   const { data: promotions, isLoading } = trpc.promotions.list.useQuery();
   const { data: products } = trpc.products.list.useQuery();
+
   const createPromotion = trpc.promotions.create.useMutation({
     onSuccess: () => {
-      toast({
-        title: "Promotion Created",
-        description: "The promotion has been created successfully.",
-      });
-      setIsDialogOpen(false);
-      resetForm();
-      trpc.useUtils().promotions.list.invalidate();
+      message.success('Promotion created successfully');
+      setIsModalVisible(false);
+      form.resetFields();
     },
     onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      message.error(error.message);
     },
   });
 
   const deletePromotion = trpc.promotions.delete.useMutation({
     onSuccess: () => {
-      toast({
-        title: "Promotion Deleted",
-        description: "The promotion has been deleted successfully.",
-      });
-      trpc.useUtils().promotions.list.invalidate();
+      message.success('Promotion deleted successfully');
     },
   });
 
-  const resetForm = () => {
-    setFormData({
-      name: "",
-      description: "",
-      promotionType: "percentage",
-      discountValue: "",
-      bonusPattern: "",
-      startDate: "",
-      endDate: "",
-      productIds: [],
-    });
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.name || !formData.startDate || !formData.endDate) {
-      toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    createPromotion.mutate({
-      name: formData.name,
-      description: formData.description || null,
-      promotionType: formData.promotionType,
-      discountValue: formData.discountValue ? parseFloat(formData.discountValue) : null,
-      bonusPattern: formData.bonusPattern || null,
-      startDate: new Date(formData.startDate),
-      endDate: new Date(formData.endDate),
-      active: true,
-      priority: 0,
-      productIds: formData.productIds,
-    });
-  };
-
-  const getPromotionIcon = (type: string) => {
-    switch (type) {
-      case "percentage":
-        return <TrendingDown className="h-5 w-5 text-green-600" />;
-      case "fixed_amount":
-        return <Tag className="h-5 w-5 text-blue-600" />;
-      case "bonus_buy":
-        return <Gift className="h-5 w-5 text-purple-600" />;
-      default:
-        return <Tag className="h-5 w-5 text-gray-600" />;
-    }
-  };
-
-  const getPromotionTypeLabel = (type: string) => {
-    switch (type) {
-      case "percentage":
-        return "Percentage Discount";
-      case "fixed_amount":
-        return "Fixed Amount";
-      case "bonus_buy":
-        return "Bonus Buy (e.g., Buy 5 Get 1 Free)";
-      case "bundle":
-        return "Bundle Deal";
-      default:
-        return type;
-    }
-  };
-
-  const isPromotionActive = (startDate: Date, endDate: Date) => {
+  const getPromotionStatus = (startDate: string, endDate: string): 'active' | 'scheduled' | 'expired' => {
     const now = new Date();
-    return now >= new Date(startDate) && now <= new Date(endDate);
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    if (now < start) return 'scheduled';
+    if (now > end) return 'expired';
+    return 'active';
   };
 
-  if (isLoading) {
-    return (
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-lg">Loading promotions...</div>
-        </div>
-      </div>
-    );
-  }
+  const promotionsData: Promotion[] = (promotions || []).map((p) => ({
+    id: p.id.toString(),
+    name: p.name,
+    description: p.description || '',
+    promotionType: p.promotionType,
+    discountValue: p.discountValue || '0',
+    startDate: p.startDate,
+    endDate: p.endDate,
+    status: getPromotionStatus(p.startDate, p.endDate),
+  }));
+
+  const columns: ColumnsType<Promotion> = [
+    {
+      title: 'Promotion Name',
+      dataIndex: 'name',
+      key: 'name',
+      width: 200,
+    },
+    {
+      title: 'Description',
+      dataIndex: 'description',
+      key: 'description',
+      ellipsis: true,
+    },
+    {
+      title: 'Type',
+      dataIndex: 'promotionType',
+      key: 'promotionType',
+      width: 120,
+      render: (type: string) => (
+        <Tag color="blue">{type.toUpperCase()}</Tag>
+      ),
+    },
+    {
+      title: 'Discount',
+      dataIndex: 'discountValue',
+      key: 'discountValue',
+      width: 120,
+      align: 'right',
+      render: (value: string, record) => (
+        <Tag color="green">
+          {record.promotionType === 'percentage' ? `${value}%` : `N$${value}`}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Start Date',
+      dataIndex: 'startDate',
+      key: 'startDate',
+      width: 120,
+      render: (date: string) => dayjs(date).format('YYYY-MM-DD'),
+    },
+    {
+      title: 'End Date',
+      dataIndex: 'endDate',
+      key: 'endDate',
+      width: 120,
+      render: (date: string) => dayjs(date).format('YYYY-MM-DD'),
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      width: 120,
+      filters: [
+        { text: 'Active', value: 'active' },
+        { text: 'Scheduled', value: 'scheduled' },
+        { text: 'Expired', value: 'expired' },
+      ],
+      onFilter: (value, record) => record.status === value,
+      render: (status: string) => {
+        const colorMap = {
+          active: 'green',
+          scheduled: 'blue',
+          expired: 'red',
+        };
+        return (
+          <Tag color={colorMap[status as keyof typeof colorMap]}>
+            {status.toUpperCase()}
+          </Tag>
+        );
+      },
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      fixed: 'right',
+      width: 120,
+      render: (_, record) => (
+        <Space size="small">
+          <Button
+            type="link"
+            icon={<EditOutlined />}
+            onClick={() => handleEdit(record)}
+          />
+          <Button
+            type="link"
+            danger
+            icon={<DeleteOutlined />}
+            onClick={() => handleDelete(record)}
+          />
+        </Space>
+      ),
+    },
+  ];
+
+  const handleEdit = (promotion: Promotion) => {
+    form.setFieldsValue({
+      ...promotion,
+      dateRange: [dayjs(promotion.startDate), dayjs(promotion.endDate)],
+    });
+    setIsModalVisible(true);
+  };
+
+  const handleDelete = (promotion: Promotion) => {
+    Modal.confirm({
+      title: 'Delete Promotion',
+      content: `Are you sure you want to delete "${promotion.name}"?`,
+      okText: 'Delete',
+      okType: 'danger',
+      onOk: () => {
+        deletePromotion.mutate({ id: parseInt(promotion.id) });
+      },
+    });
+  };
+
+  const handleModalOk = () => {
+    form.validateFields().then((values) => {
+      const [startDate, endDate] = values.dateRange;
+      createPromotion.mutate({
+        name: values.name,
+        description: values.description,
+        promotionType: values.promotionType,
+        discountValue: values.discountValue.toString(),
+        bonusPattern: values.bonusPattern || '',
+        startDate: startDate.format('YYYY-MM-DD'),
+        endDate: endDate.format('YYYY-MM-DD'),
+        productIds: values.productIds || [],
+      });
+    });
+  };
+
+  const activePromotions = promotionsData.filter(p => p.status === 'active').length;
+  const scheduledPromotions = promotionsData.filter(p => p.status === 'scheduled').length;
+  const expiredPromotions = promotionsData.filter(p => p.status === 'expired').length;
 
   return (
-    <div className="container mx-auto p-6">
-      <Button
-        variant="outline"
-        onClick={() => window.location.href = '/'}
-        className="mb-4"
-      >
-        <Home className="mr-2 h-4 w-4" />
-        Back to Home
-      </Button>
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Promotions & Specials</h1>
-          <p className="text-gray-600 mt-1">Manage time-based offers and bonus patterns</p>
+    <AntNavigation>
+      <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <Title level={2} style={{ marginBottom: 8 }}>Promotions Management</Title>
+            <Text type="secondary">
+              Manage time-bound promotional discounts applied as the 3rd column in pricing
+            </Text>
+          </div>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            size="large"
+            onClick={() => setIsModalVisible(true)}
+          >
+            Create Promotion
+          </Button>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-[#dc2626] hover:bg-[#b91c1c] text-white">
-              <Plus className="mr-2 h-4 w-4" />
-              Create Promotion
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px]">
-            <form onSubmit={handleSubmit}>
-              <DialogHeader>
-                <DialogTitle>Create New Promotion</DialogTitle>
-                <DialogDescription>
-                  Set up a new promotional offer with time-based activation
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="name">Promotion Name *</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Black Friday 2024"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Special discount for Black Friday weekend"
-                    rows={3}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="promotionType">Promotion Type *</Label>
-                  <Select
-                    value={formData.promotionType}
-                    onValueChange={(value) => setFormData({ ...formData, promotionType: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="percentage">Percentage Discount</SelectItem>
-                      <SelectItem value="fixed_amount">Fixed Amount Discount</SelectItem>
-                      <SelectItem value="bonus_buy">Bonus Buy (Buy X Get Y Free)</SelectItem>
-                      <SelectItem value="bundle">Bundle Deal</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                {(formData.promotionType === "percentage" || formData.promotionType === "fixed_amount") && (
-                  <div className="grid gap-2">
-                    <Label htmlFor="discountValue">
-                      {formData.promotionType === "percentage" ? "Discount Percentage (%)" : "Discount Amount (N$)"}
-                    </Label>
-                    <Input
-                      id="discountValue"
-                      type="number"
-                      step="0.01"
-                      value={formData.discountValue}
-                      onChange={(e) => setFormData({ ...formData, discountValue: e.target.value })}
-                      placeholder={formData.promotionType === "percentage" ? "15" : "50.00"}
-                    />
-                  </div>
-                )}
-                {formData.promotionType === "bonus_buy" && (
-                  <div className="grid gap-2">
-                    <Label htmlFor="bonusPattern">Bonus Pattern</Label>
-                    <Input
-                      id="bonusPattern"
-                      value={formData.bonusPattern}
-                      onChange={(e) => setFormData({ ...formData, bonusPattern: e.target.value })}
-                      placeholder="Buy 5 Get 1 Free"
-                    />
-                  </div>
-                )}
-                <div className="grid gap-2">
-                  <Label htmlFor="products">Applicable Products (Optional)</Label>
-                  <MultiSelect
-                    options={products?.map((p) => ({ value: p.id, label: p.name })) || []}
-                    selected={formData.productIds}
-                    onChange={(selected) => setFormData({ ...formData, productIds: selected })}
-                    placeholder="Select products (leave empty for all products)"
-                  />
-                  <p className="text-xs text-gray-500">If no products are selected, the promotion will apply to all products</p>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="startDate">Start Date *</Label>
-                    <Input
-                      id="startDate"
-                      type="datetime-local"
-                      value={formData.startDate}
-                      onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="endDate">End Date *</Label>
-                    <Input
-                      id="endDate"
-                      type="datetime-local"
-                      value={formData.endDate}
-                      onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                    />
-                  </div>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" className="bg-[#dc2626] hover:bg-[#b91c1c] text-white">
-                  Create Promotion
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {promotions && promotions.length > 0 ? (
-          promotions.map((promotion: any) => (
-            <Card key={promotion.id} className="relative">
-              {isPromotionActive(promotion.startDate, promotion.endDate) && (
-                <div className="absolute top-4 right-4">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                    Active
-                  </span>
-                </div>
-              )}
-              <CardHeader>
-                <div className="flex items-start gap-3">
-                  {getPromotionIcon(promotion.promotionType)}
-                  <div className="flex-1">
-                    <CardTitle className="text-lg">{promotion.name}</CardTitle>
-                    <CardDescription className="mt-1">
-                      {getPromotionTypeLabel(promotion.promotionType)}
-                    </CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {promotion.description && (
-                  <p className="text-sm text-gray-600 mb-4">{promotion.description}</p>
-                )}
-                
-                {promotion.discountValue && (
-                  <div className="mb-3">
-                    <span className="text-2xl font-bold text-[#dc2626]">
-                      {promotion.promotionType === "percentage" ? `${promotion.discountValue}%` : `N$${promotion.discountValue}`}
-                    </span>
-                    <span className="text-sm text-gray-600 ml-2">discount</span>
-                  </div>
-                )}
-                
-                {promotion.bonusPattern && (
-                  <div className="mb-3">
-                    <span className="text-sm font-semibold text-purple-600">{promotion.bonusPattern}</span>
-                  </div>
-                )}
-                
-                <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
-                  <Calendar className="h-4 w-4" />
-                  <span>
-                    {new Date(promotion.startDate).toLocaleDateString()} - {new Date(promotion.endDate).toLocaleDateString()}
-                  </span>
-                </div>
-                
-                <div className="mt-4 pt-4 border-t flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1"
-                    onClick={() => {
-                      if (confirm("Are you sure you want to delete this promotion?")) {
-                        deletePromotion.mutate({ id: promotion.id });
-                      }
-                    }}
-                  >
-                    Delete
-                  </Button>
-                </div>
-              </CardContent>
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={8}>
+            <Card>
+              <Statistic
+                title="Active Promotions"
+                value={activePromotions}
+                prefix={<GiftOutlined />}
+                valueStyle={{ color: '#52c41a' }}
+              />
             </Card>
-          ))
-        ) : (
-          <Card className="col-span-full">
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <Gift className="h-12 w-12 text-gray-400 mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Promotions Yet</h3>
-              <p className="text-gray-600 text-center mb-4">
-                Create your first promotion to offer special deals and discounts to your customers.
-              </p>
-              <Button
-                onClick={() => setIsDialogOpen(true)}
-                className="bg-[#dc2626] hover:bg-[#b91c1c] text-white"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Create First Promotion
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-      </div>
-    </div>
+          </Col>
+          <Col xs={24} sm={8}>
+            <Card>
+              <Statistic
+                title="Scheduled"
+                value={scheduledPromotions}
+                prefix={<CalendarOutlined />}
+                valueStyle={{ color: '#1890ff' }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={8}>
+            <Card>
+              <Statistic
+                title="Expired"
+                value={expiredPromotions}
+                valueStyle={{ color: '#ff4d4f' }}
+              />
+            </Card>
+          </Col>
+        </Row>
+
+        <Card>
+          <Table
+            columns={columns}
+            dataSource={promotionsData}
+            loading={isLoading}
+            rowKey="id"
+            scroll={{ x: 1200 }}
+            pagination={{
+              pageSize: 10,
+              showSizeChanger: true,
+              showTotal: (total) => `Total ${total} promotions`,
+            }}
+          />
+        </Card>
+
+        <Modal
+          title="Create Promotion"
+          open={isModalVisible}
+          onOk={handleModalOk}
+          onCancel={() => {
+            setIsModalVisible(false);
+            form.resetFields();
+          }}
+          width={600}
+          confirmLoading={createPromotion.isPending}
+        >
+          <Form form={form} layout="vertical">
+            <Form.Item
+              name="name"
+              label="Promotion Name"
+              rules={[{ required: true, message: 'Please enter promotion name' }]}
+            >
+              <Input placeholder="e.g., Summer Sale 2025" />
+            </Form.Item>
+
+            <Form.Item
+              name="description"
+              label="Description"
+            >
+              <TextArea
+                rows={3}
+                placeholder="Describe the promotion details..."
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="promotionType"
+              label="Discount Type"
+              rules={[{ required: true }]}
+              initialValue="percentage"
+            >
+              <Select>
+                <Select.Option value="percentage">Percentage (%)</Select.Option>
+                <Select.Option value="fixed">Fixed Amount (N$)</Select.Option>
+                <Select.Option value="bonus">Bonus Pattern</Select.Option>
+              </Select>
+            </Form.Item>
+
+            <Form.Item
+              name="discountValue"
+              label="Discount Value"
+              rules={[{ required: true, message: 'Please enter discount value' }]}
+            >
+              <InputNumber
+                min={0}
+                precision={2}
+                style={{ width: '100%' }}
+                placeholder="e.g., 10 for 10%"
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="bonusPattern"
+              label="Bonus Pattern (Optional)"
+            >
+              <Input placeholder="e.g., 10+2 (Buy 10, Get 2 Free)" />
+            </Form.Item>
+
+            <Form.Item
+              name="dateRange"
+              label="Promotion Period"
+              rules={[{ required: true, message: 'Please select date range' }]}
+            >
+              <RangePicker style={{ width: '100%' }} />
+            </Form.Item>
+
+            <Form.Item
+              name="productIds"
+              label="Apply to Products (Optional)"
+            >
+              <Select
+                mode="multiple"
+                placeholder="Select products (leave empty for all)"
+                options={products?.map(p => ({
+                  value: p.id.toString(),
+                  label: p.name,
+                }))}
+              />
+            </Form.Item>
+          </Form>
+        </Modal>
+      </Space>
+    </AntNavigation>
   );
 }
-

@@ -1,548 +1,560 @@
-import Navigation from "@/components/Navigation";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { useState } from 'react';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { trpc } from "@/lib/trpc";
-import { Calculator as CalcIcon, ArrowRight, TrendingDown, Plus, Trash2, FileText, Mail, Download, ShoppingCart, Home } from "lucide-react";
-import { useState } from "react";
-import { toast } from "@/hooks/use-toast";
-import {
+  Card,
+  Form,
+  Select,
+  InputNumber,
+  Button,
+  Space,
+  Typography,
+  Divider,
+  Row,
+  Col,
+  Statistic,
+  Steps,
+  Alert,
+  Tag,
   Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+} from 'antd';
+import {
+  CalculatorOutlined,
+  ArrowRightOutlined,
+  CheckCircleOutlined,
+  PlusOutlined,
+  DeleteOutlined,
+} from '@ant-design/icons';
+import AntNavigation from '@/components/AntNavigation';
+import { trpc } from '@/lib/trpc';
+import type { ColumnsType } from 'antd/es/table';
 
-interface QuoteItem {
-  productId: string;
-  productName: string;
-  quantity: number;
+const { Title, Text, Paragraph } = Typography;
+
+interface CalculationResult {
   basePrice: number;
   productDiscount: number;
-  unitPrice: number;
+  priceAfterProductDiscount: number;
+  logisticsFee: number;
+  priceAfterLogistics: number;
+  promotionalDiscount: number;
+  finalPrice: number;
+  totalSavings: number;
+  quantity: number;
   lineTotal: number;
 }
 
-export default function Calculator() {
-  const [selectedProduct, setSelectedProduct] = useState<string>("");
-  const [selectedCustomer, setSelectedCustomer] = useState<string>("");
-  const [quantity, setQuantity] = useState<number>(1);
-  const [quoteItems, setQuoteItems] = useState<QuoteItem[]>([]);
-  const [quoteName, setQuoteName] = useState<string>("");
-  const [quoteNotes, setQuoteNotes] = useState<string>("");
-  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
-  const [emailAddress, setEmailAddress] = useState<string>("");
-  const [calculation, setCalculation] = useState<any>(null);
+interface QuoteItem extends CalculationResult {
+  key: string;
+  productName: string;
+}
 
+export default function Calculator() {
+  const [form] = Form.useForm();
+  const [result, setResult] = useState<CalculationResult | null>(null);
+  const [quoteItems, setQuoteItems] = useState<QuoteItem[]>([]);
+  
   const { data: products } = trpc.products.list.useQuery();
   const { data: customers } = trpc.customers.list.useQuery();
-  const calculateMutation = trpc.pricing.calculate.useMutation();
-  
-  const generatePDF = trpc.quotes.generatePDF.useMutation({
-    onSuccess: (data) => {
-      toast({
-        title: "PDF Generated",
-        description: "Your quote PDF has been generated successfully.",
-      });
-      // Download PDF
-      const link = document.createElement('a');
-      link.href = data.pdfUrl;
-      link.download = `quote-${Date.now()}.pdf`;
-      link.click();
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
 
-  const emailQuote = trpc.quotes.email.useMutation({
-    onSuccess: () => {
-      toast({
-        title: "Email Sent",
-        description: "Quote has been sent successfully.",
-      });
-      setIsEmailDialogOpen(false);
-      setEmailAddress("");
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+  const calculatePrice = (values: any) => {
+    const basePrice = parseFloat(values.basePrice) || 0;
+    const productDiscount = parseFloat(values.productDiscount) || 0;
+    const logisticsFee = parseFloat(values.logisticsFee) || 0;
+    const promotionalDiscount = parseFloat(values.promotionalDiscount) || 0;
+    const quantity = parseInt(values.quantity) || 1;
 
-  const handleCalculate = () => {
-    if (!selectedProduct) return;
-    calculateMutation.mutate(
-      {
-        productId: selectedProduct,
-        customerId: selectedCustomer && selectedCustomer !== "none" ? selectedCustomer : undefined,
-      },
-      {
-        onSuccess: (data) => setCalculation(data),
-      }
-    );
+    // Step 1: Apply Product Discount
+    const priceAfterProductDiscount = basePrice * (1 - productDiscount / 100);
+
+    // Step 2: Apply Logistics Fee (as a discount)
+    const priceAfterLogistics = priceAfterProductDiscount * (1 - logisticsFee / 100);
+
+    // Step 3: Apply Promotional Discount
+    const finalPrice = priceAfterLogistics * (1 - promotionalDiscount / 100);
+
+    const totalSavings = basePrice - finalPrice;
+    const lineTotal = finalPrice * quantity;
+
+    setResult({
+      basePrice,
+      productDiscount,
+      priceAfterProductDiscount,
+      logisticsFee,
+      priceAfterLogistics,
+      promotionalDiscount,
+      finalPrice,
+      totalSavings,
+      quantity,
+      lineTotal,
+    });
   };
 
   const handleAddToQuote = () => {
-    if (!selectedProduct || !calculation) {
-      toast({
-        title: "Error",
-        description: "Please calculate a price first before adding to quote.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const product = products?.find(p => p.id === selectedProduct);
-    if (!product) return;
+    if (!result) return;
+    
+    const selectedProduct = products?.find(p => p.id === form.getFieldValue('product'));
+    const productName = selectedProduct?.name || 'Unknown Product';
 
     const newItem: QuoteItem = {
-      productId: selectedProduct,
-      productName: product.name,
-      quantity: quantity,
-      basePrice: calculation.basePrice,
-      productDiscount: calculation.productDiscount,
-      unitPrice: calculation.finalPrice,
-      lineTotal: calculation.finalPrice * quantity,
+      ...result,
+      key: Date.now().toString(),
+      productName,
     };
 
     setQuoteItems([...quoteItems, newItem]);
-    toast({
-      title: "Added to Quote",
-      description: `${product.name} (x${quantity}) added to quote.`,
-    });
-
-    // Reset selections
-    setSelectedProduct("");
-    setQuantity(1);
-    setCalculation(null);
   };
 
-  const handleRemoveItem = (index: number) => {
-    setQuoteItems(quoteItems.filter((_, i) => i !== index));
+  const handleRemoveItem = (key: string) => {
+    setQuoteItems(quoteItems.filter(item => item.key !== key));
   };
 
-  const calculateQuoteTotals = () => {
-    const subtotal = quoteItems.reduce((sum, item) => sum + item.lineTotal, 0);
-    const totalDiscount = quoteItems.reduce((sum, item) => {
-      const discountAmount = (item.basePrice * item.quantity) - item.lineTotal;
-      return sum + discountAmount;
-    }, 0);
-    return { subtotal, totalDiscount };
-  };
+  const quoteColumns: ColumnsType<QuoteItem> = [
+    {
+      title: 'Product',
+      dataIndex: 'productName',
+      key: 'productName',
+    },
+    {
+      title: 'Qty',
+      dataIndex: 'quantity',
+      key: 'quantity',
+      width: 80,
+    },
+    {
+      title: 'Base Price',
+      dataIndex: 'basePrice',
+      key: 'basePrice',
+      align: 'right',
+      render: (val: number) => `N$${val.toFixed(2)}`,
+    },
+    {
+      title: 'Disc 1 (%)',
+      dataIndex: 'productDiscount',
+      key: 'productDiscount',
+      align: 'right',
+      render: (val: number) => <Tag color="blue">{val.toFixed(2)}%</Tag>,
+    },
+    {
+      title: 'Disc 2 (%)',
+      dataIndex: 'logisticsFee',
+      key: 'logisticsFee',
+      align: 'right',
+      render: (val: number) => <Tag color="orange">{val.toFixed(2)}%</Tag>,
+    },
+    {
+      title: 'Disc 3 (%)',
+      dataIndex: 'promotionalDiscount',
+      key: 'promotionalDiscount',
+      align: 'right',
+      render: (val: number) => <Tag color="green">{val.toFixed(2)}%</Tag>,
+    },
+    {
+      title: 'Unit Price',
+      dataIndex: 'finalPrice',
+      key: 'finalPrice',
+      align: 'right',
+      render: (val: number) => `N$${val.toFixed(2)}`,
+    },
+    {
+      title: 'Line Total',
+      dataIndex: 'lineTotal',
+      key: 'lineTotal',
+      align: 'right',
+      render: (val: number) => <strong>N${val.toFixed(2)}</strong>,
+    },
+    {
+      title: 'Action',
+      key: 'action',
+      width: 80,
+      render: (_, record) => (
+        <Button
+          type="link"
+          danger
+          icon={<DeleteOutlined />}
+          onClick={() => handleRemoveItem(record.key)}
+        />
+      ),
+    },
+  ];
 
-  const handleGeneratePDF = () => {
-    if (quoteItems.length === 0) {
-      toast({
-        title: "Error",
-        description: "Please add items to the quote first.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const customer = customers?.find(c => c.id === selectedCustomer);
-    const totals = calculateQuoteTotals();
-
-    generatePDF.mutate({
-      quoteName: quoteName || `Quote ${new Date().toLocaleDateString()}`,
-      customerName: customer?.name || "Walk-in Customer",
-      items: quoteItems,
-      subtotal: totals.subtotal,
-      totalDiscount: totals.totalDiscount,
-      notes: quoteNotes,
-    });
-  };
-
-  const handleEmailQuote = () => {
-    if (!emailAddress) {
-      toast({
-        title: "Error",
-        description: "Please enter an email address.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const customer = customers?.find(c => c.id === selectedCustomer);
-    const totals = calculateQuoteTotals();
-
-    emailQuote.mutate({
-      quoteName: quoteName || `Quote ${new Date().toLocaleDateString()}`,
-      customerName: customer?.name || "Walk-in Customer",
-      items: quoteItems,
-      subtotal: totals.subtotal,
-      totalDiscount: totals.totalDiscount,
-      notes: quoteNotes,
-      emailAddress: emailAddress,
-    });
-  };
-
-  const selectedProductData = products?.find((p) => p.id === selectedProduct);
-  const selectedCustomerData = customers?.find((c) => c.id === selectedCustomer && selectedCustomer !== "none");
-  const quoteTotals = calculateQuoteTotals();
+  const quoteTotal = quoteItems.reduce((sum, item) => sum + item.lineTotal, 0);
+  const quoteSavings = quoteItems.reduce((sum, item) => sum + (item.totalSavings * item.quantity), 0);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navigation />
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto">
-          <Button
-            variant="outline"
-            onClick={() => window.location.href = '/'}
-            className="mb-4"
-          >
-            <Home className="mr-2 h-4 w-4" />
-            Back to Home
-          </Button>
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">Pricing Calculator & Quote Builder</h1>
-            <p className="text-gray-600">
-              Calculate prices with sequential discounts and build multi-product quotes
-            </p>
-          </div>
-
-          <div className="grid gap-6 lg:grid-cols-3">
-            {/* Left Column - Calculator */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Input Section */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <CalcIcon className="h-5 w-5" />
-                    Calculate Price
-                  </CardTitle>
-                  <CardDescription>
-                    Select product, customer, and quantity to calculate pricing
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Product</label>
-                    <Select value={selectedProduct} onValueChange={setSelectedProduct}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a product" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {products?.map((product) => (
-                          <SelectItem key={product.id} value={product.id}>
-                            {product.name} - N$ {product.basePrice}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Customer (Optional)</label>
-                    <Select value={selectedCustomer} onValueChange={setSelectedCustomer}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a customer" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">No Customer (Product Discount Only)</SelectItem>
-                        {customers?.map((customer) => (
-                          <SelectItem key={customer.id} value={customer.id}>
-                            {customer.name} - {customer.logFeeDiscount}% Log Fee
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="quantity">Quantity</Label>
-                    <Input
-                      id="quantity"
-                      type="number"
-                      min="1"
-                      value={quantity}
-                      onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
-                    />
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button onClick={handleCalculate} disabled={!selectedProduct} className="flex-1 gap-2 bg-blue-600 hover:bg-blue-700 text-white">
-                      Calculate Price
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                    {calculation && (
-                      <Button
-                        onClick={handleAddToQuote}
-                        className="gap-2 bg-green-600 hover:bg-green-700 text-white"
-                      >
-                        <Plus className="h-4 w-4" />
-                        Add to Quote
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Results Section */}
-              {calculation && (
-                <Card className="border-green-200 bg-green-50">
-                  <CardHeader>
-                    <CardTitle>Calculation Result</CardTitle>
-                    <CardDescription>Sequential discount breakdown</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center py-2 border-b">
-                        <span className="font-medium">Base Price (SEP)</span>
-                        <span className="text-lg font-bold">N$ {calculation.basePrice.toFixed(2)}</span>
-                      </div>
-
-                      <div className="flex justify-between items-center py-2 border-b bg-white px-3 rounded">
-                        <div className="flex items-center gap-2">
-                          <TrendingDown className="h-4 w-4 text-blue-600" />
-                          <span>Product Discount ({calculation.productDiscount}%)</span>
-                        </div>
-                        <span className="font-semibold text-blue-600">
-                          N$ {calculation.priceAfterProductDiscount.toFixed(2)}
-                        </span>
-                      </div>
-
-                      {calculation.promotionDiscount > 0 && (
-                        <div className="flex justify-between items-center py-2 border-b bg-white px-3 rounded">
-                          <div className="flex items-center gap-2">
-                            <TrendingDown className="h-4 w-4 text-red-600" />
-                            <span className="text-red-600 font-semibold">🎉 Promotion: {calculation.appliedPromotion} ({calculation.promotionDiscount}%)</span>
-                          </div>
-                          <span className="font-semibold text-red-600">
-                            N$ {calculation.priceAfterPromotion.toFixed(2)}
-                          </span>
-                        </div>
-                      )}
-
-                      {calculation.logFeeDiscount > 0 && (
-                        <div className="flex justify-between items-center py-2 border-b bg-white px-3 rounded">
-                          <div className="flex items-center gap-2">
-                            <TrendingDown className="h-4 w-4 text-blue-600" />
-                            <span>Log Fee Discount ({calculation.logFeeDiscount}%)</span>
-                          </div>
-                          <span className="font-semibold text-blue-600">
-                            N$ {calculation.priceAfterLogFee.toFixed(2)}
-                          </span>
-                        </div>
-                      )}
-
-                      <div className="flex justify-between items-center py-3 bg-green-600 text-white px-4 rounded-lg mt-4">
-                        <span className="text-lg font-bold">Unit Price</span>
-                        <span className="text-2xl font-bold">N$ {calculation.finalPrice.toFixed(2)}</span>
-                      </div>
-
-                      <div className="flex justify-between items-center py-3 bg-[#1e3a8a] text-white px-4 rounded-lg">
-                        <span className="text-lg font-bold">Line Total (x{quantity})</span>
-                        <span className="text-2xl font-bold">N$ {(calculation.finalPrice * quantity).toFixed(2)}</span>
-                      </div>
-
-                      <div className="text-sm text-gray-600 text-center pt-2">
-                        Unit Discount: N$ {calculation.totalDiscountAmount.toFixed(2)} (
-                        {calculation.totalDiscountPercentage.toFixed(2)}%)
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-
-            {/* Right Column - Quote Builder */}
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <ShoppingCart className="h-5 w-5" />
-                    Quote Builder
-                  </CardTitle>
-                  <CardDescription>
-                    {quoteItems.length} item(s) in quote
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="quoteName">Quote Name</Label>
-                    <Input
-                      id="quoteName"
-                      value={quoteName}
-                      onChange={(e) => setQuoteName(e.target.value)}
-                      placeholder="e.g., Monthly Order - January"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="quoteNotes">Notes (Optional)</Label>
-                    <Textarea
-                      id="quoteNotes"
-                      value={quoteNotes}
-                      onChange={(e) => setQuoteNotes(e.target.value)}
-                      placeholder="Add any special instructions or notes..."
-                      rows={3}
-                    />
-                  </div>
-
-                  {quoteItems.length > 0 && (
-                    <>
-                      <div className="border-t pt-4 space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Subtotal:</span>
-                          <span className="font-semibold">N$ {quoteTotals.subtotal.toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between text-sm text-green-600">
-                          <span>Total Discount:</span>
-                          <span className="font-semibold">-N$ {quoteTotals.totalDiscount.toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between text-lg font-bold border-t pt-2">
-                          <span>Total:</span>
-                          <span>N$ {quoteTotals.subtotal.toFixed(2)}</span>
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Button 
-                          onClick={handleGeneratePDF}
-                          className="w-full gap-2 bg-[#1e3a8a] hover:bg-[#1e40af]"
-                          disabled={generatePDF.isPending}
-                        >
-                          <FileText className="h-4 w-4" />
-                          {generatePDF.isPending ? "Generating..." : "Generate PDF"}
-                        </Button>
-
-                        <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
-                          <DialogTrigger asChild>
-                            <Button variant="outline" className="w-full gap-2">
-                              <Mail className="h-4 w-4" />
-                              Email Quote
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Email Quote</DialogTitle>
-                              <DialogDescription>
-                                Send this quote to a customer via email
-                              </DialogDescription>
-                            </DialogHeader>
-                            <div className="space-y-4 py-4">
-                              <div>
-                                <Label htmlFor="email">Email Address</Label>
-                                <Input
-                                  id="email"
-                                  type="email"
-                                  value={emailAddress}
-                                  onChange={(e) => setEmailAddress(e.target.value)}
-                                  placeholder="customer@example.com"
-                                />
-                              </div>
-                            </div>
-                            <DialogFooter>
-                              <Button variant="outline" onClick={() => setIsEmailDialogOpen(false)}>
-                                Cancel
-                              </Button>
-                              <Button 
-                                onClick={handleEmailQuote}
-                                disabled={emailQuote.isPending}
-                                className="bg-[#1e3a8a] hover:bg-[#1e40af]"
-                              >
-                                {emailQuote.isPending ? "Sending..." : "Send Email"}
-                              </Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
-
-                        <Button 
-                          onClick={() => setQuoteItems([])}
-                          variant="outline"
-                          className="w-full gap-2 text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                          Clear Quote
-                        </Button>
-                      </div>
-                    </>
-                  )}
-
-                  {quoteItems.length === 0 && (
-                    <div className="text-center py-8 text-gray-500">
-                      <ShoppingCart className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">No items in quote yet</p>
-                      <p className="text-xs">Calculate a price and add items to build your quote</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-
-          {/* Quote Items Table */}
-          {quoteItems.length > 0 && (
-            <Card className="mt-6">
-              <CardHeader>
-                <CardTitle>Quote Items</CardTitle>
-                <CardDescription>Review and manage items in your quote</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Product</TableHead>
-                      <TableHead className="text-right">Qty</TableHead>
-                      <TableHead className="text-right">Base Price</TableHead>
-                      <TableHead className="text-right">Discount</TableHead>
-                      <TableHead className="text-right">Unit Price</TableHead>
-                      <TableHead className="text-right">Line Total</TableHead>
-                      <TableHead className="text-center">Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {quoteItems.map((item, index) => (
-                      <TableRow key={index}>
-                        <TableCell className="font-medium">{item.productName}</TableCell>
-                        <TableCell className="text-right">{item.quantity}</TableCell>
-                        <TableCell className="text-right">N$ {item.basePrice.toFixed(2)}</TableCell>
-                        <TableCell className="text-right text-green-600">{item.productDiscount}%</TableCell>
-                        <TableCell className="text-right font-semibold">N$ {item.unitPrice.toFixed(2)}</TableCell>
-                        <TableCell className="text-right font-bold">N$ {item.lineTotal.toFixed(2)}</TableCell>
-                        <TableCell className="text-center">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveItem(index)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          )}
+    <AntNavigation>
+      <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        <div>
+          <Title level={2}>
+            <CalculatorOutlined /> 3-Column Sequential Discount Calculator
+          </Title>
+          <Paragraph type="secondary">
+            Calculate final pricing with sequential discount application: Product Discount → Logistics Fee → Promotional Discount
+          </Paragraph>
         </div>
-      </div>
-    </div>
+
+        <Alert
+          message="Sage 200 Evolution Integration"
+          description="This calculation logic is automatically applied when sales staff add line items in Sage. The 3 discount columns are populated via API, and the final price appears in the line total."
+          type="info"
+          showIcon
+          icon={<CheckCircleOutlined />}
+        />
+
+        <Row gutter={[24, 24]}>
+          <Col xs={24} lg={12}>
+            <Card title="Input Parameters" bordered={false}>
+              <Form
+                form={form}
+                layout="vertical"
+                onFinish={calculatePrice}
+                initialValues={{
+                  quantity: 1,
+                  basePrice: 100,
+                  productDiscount: 10,
+                  logisticsFee: 5,
+                  promotionalDiscount: 3,
+                }}
+              >
+                <Form.Item
+                  name="product"
+                  label="Select Product (Optional)"
+                >
+                  <Select
+                    placeholder="Choose a product"
+                    allowClear
+                    showSearch
+                    filterOption={(input, option) =>
+                      (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                    }
+                    options={products?.map(p => ({
+                      value: p.id,
+                      label: p.name,
+                    }))}
+                    onChange={(value) => {
+                      const product = products?.find(p => p.id === value);
+                      if (product) {
+                        form.setFieldsValue({
+                          basePrice: parseFloat(product.basePrice),
+                          productDiscount: parseFloat(product.productDiscount || '0'),
+                        });
+                      }
+                    }}
+                  />
+                </Form.Item>
+
+                <Form.Item
+                  name="customer"
+                  label="Select Customer (Optional)"
+                >
+                  <Select
+                    placeholder="Choose a customer"
+                    allowClear
+                    showSearch
+                    filterOption={(input, option) =>
+                      (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                    }
+                    options={customers?.map(c => ({
+                      value: c.id,
+                      label: c.name,
+                    }))}
+                    onChange={(value) => {
+                      const customer = customers?.find(c => c.id === value);
+                      if (customer) {
+                        form.setFieldsValue({
+                          logisticsFee: parseFloat(customer.logFeeDiscount || '0'),
+                        });
+                      }
+                    }}
+                  />
+                </Form.Item>
+
+                <Form.Item
+                  name="quantity"
+                  label="Quantity"
+                  rules={[{ required: true, message: 'Please enter quantity' }]}
+                >
+                  <InputNumber
+                    min={1}
+                    style={{ width: '100%' }}
+                    size="large"
+                  />
+                </Form.Item>
+
+                <Divider />
+
+                <Form.Item
+                  name="basePrice"
+                  label="Base Price (N$)"
+                  rules={[{ required: true, message: 'Please enter base price' }]}
+                >
+                  <InputNumber
+                    min={0}
+                    precision={2}
+                    style={{ width: '100%' }}
+                    prefix="N$"
+                    size="large"
+                  />
+                </Form.Item>
+
+                <Form.Item
+                  name="productDiscount"
+                  label={
+                    <Space>
+                      <Text>Column 1: Product Discount (%)</Text>
+                      <Tag color="blue">Applied First</Tag>
+                    </Space>
+                  }
+                  rules={[{ required: true, message: 'Please enter product discount' }]}
+                >
+                  <InputNumber
+                    min={0}
+                    max={100}
+                    precision={2}
+                    style={{ width: '100%' }}
+                    suffix="%"
+                    size="large"
+                  />
+                </Form.Item>
+
+                <Form.Item
+                  name="logisticsFee"
+                  label={
+                    <Space>
+                      <Text>Column 2: Logistics Fee Discount (%)</Text>
+                      <Tag color="orange">Applied Second</Tag>
+                    </Space>
+                  }
+                  rules={[{ required: true, message: 'Please enter logistics fee' }]}
+                >
+                  <InputNumber
+                    min={0}
+                    max={100}
+                    precision={2}
+                    style={{ width: '100%' }}
+                    suffix="%"
+                    size="large"
+                  />
+                </Form.Item>
+
+                <Form.Item
+                  name="promotionalDiscount"
+                  label={
+                    <Space>
+                      <Text>Column 3: Promotional Discount (%)</Text>
+                      <Tag color="green">Applied Last</Tag>
+                    </Space>
+                  }
+                  rules={[{ required: true, message: 'Please enter promotional discount' }]}
+                >
+                  <InputNumber
+                    min={0}
+                    max={100}
+                    precision={2}
+                    style={{ width: '100%' }}
+                    suffix="%"
+                    size="large"
+                  />
+                </Form.Item>
+
+                <Space style={{ width: '100%' }} direction="vertical">
+                  <Button
+                    type="primary"
+                    htmlType="submit"
+                    size="large"
+                    block
+                    icon={<CalculatorOutlined />}
+                  >
+                    Calculate Final Price
+                  </Button>
+                  {result && (
+                    <Button
+                      type="default"
+                      size="large"
+                      block
+                      icon={<PlusOutlined />}
+                      onClick={handleAddToQuote}
+                    >
+                      Add to Quote
+                    </Button>
+                  )}
+                </Space>
+              </Form>
+            </Card>
+          </Col>
+
+          <Col xs={24} lg={12}>
+            <Card title="Calculation Breakdown" bordered={false}>
+              {result ? (
+                <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                  <Steps
+                    direction="vertical"
+                    current={3}
+                    items={[
+                      {
+                        title: 'Base Price',
+                        description: (
+                          <Statistic
+                            value={result.basePrice}
+                            precision={2}
+                            prefix="N$"
+                            valueStyle={{ fontSize: 20 }}
+                          />
+                        ),
+                      },
+                      {
+                        title: `Product Discount (${result.productDiscount}%)`,
+                        description: (
+                          <Space direction="vertical">
+                            <Text type="secondary">
+                              N${result.basePrice.toFixed(2)} × (1 - {result.productDiscount}%)
+                            </Text>
+                            <Statistic
+                              value={result.priceAfterProductDiscount}
+                              precision={2}
+                              prefix="N$"
+                              valueStyle={{ fontSize: 18, color: '#1890ff' }}
+                            />
+                          </Space>
+                        ),
+                        icon: <ArrowRightOutlined />,
+                      },
+                      {
+                        title: `Logistics Fee Discount (${result.logisticsFee}%)`,
+                        description: (
+                          <Space direction="vertical">
+                            <Text type="secondary">
+                              N${result.priceAfterProductDiscount.toFixed(2)} × (1 - {result.logisticsFee}%)
+                            </Text>
+                            <Statistic
+                              value={result.priceAfterLogistics}
+                              precision={2}
+                              prefix="N$"
+                              valueStyle={{ fontSize: 18, color: '#faad14' }}
+                            />
+                          </Space>
+                        ),
+                        icon: <ArrowRightOutlined />,
+                      },
+                      {
+                        title: `Promotional Discount (${result.promotionalDiscount}%)`,
+                        description: (
+                          <Space direction="vertical">
+                            <Text type="secondary">
+                              N${result.priceAfterLogistics.toFixed(2)} × (1 - {result.promotionalDiscount}%)
+                            </Text>
+                            <Statistic
+                              value={result.finalPrice}
+                              precision={2}
+                              prefix="N$"
+                              valueStyle={{ fontSize: 24, color: '#52c41a', fontWeight: 'bold' }}
+                            />
+                          </Space>
+                        ),
+                        icon: <CheckCircleOutlined />,
+                      },
+                    ]}
+                  />
+
+                  <Divider />
+
+                  <Row gutter={[16, 16]}>
+                    <Col span={12}>
+                      <Card style={{ background: '#f0f2f5' }}>
+                        <Statistic
+                          title="Unit Price"
+                          value={result.finalPrice}
+                          precision={2}
+                          prefix="N$"
+                          valueStyle={{ color: '#52c41a' }}
+                        />
+                      </Card>
+                    </Col>
+                    <Col span={12}>
+                      <Card style={{ background: '#e6f7ff' }}>
+                        <Statistic
+                          title={`Line Total (×${result.quantity})`}
+                          value={result.lineTotal}
+                          precision={2}
+                          prefix="N$"
+                          valueStyle={{ color: '#1890ff', fontWeight: 'bold' }}
+                        />
+                      </Card>
+                    </Col>
+                  </Row>
+
+                  <Alert
+                    message="Sage Integration Note"
+                    description={
+                      <Space direction="vertical">
+                        <Text>These 3 discount values will appear in separate columns in Sage 200 Evolution:</Text>
+                        <ul style={{ margin: 0, paddingLeft: 20 }}>
+                          <li><strong>Discount 1:</strong> {result.productDiscount}%</li>
+                          <li><strong>Discount 2:</strong> {result.logisticsFee}%</li>
+                          <li><strong>Discount 3:</strong> {result.promotionalDiscount}%</li>
+                        </ul>
+                        <Text>The <strong>Line Total</strong> in Sage will show: <strong>N${result.lineTotal.toFixed(2)}</strong></Text>
+                      </Space>
+                    }
+                    type="success"
+                    showIcon
+                  />
+                </Space>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '60px 0' }}>
+                  <CalculatorOutlined style={{ fontSize: 64, color: '#d9d9d9' }} />
+                  <Paragraph type="secondary" style={{ marginTop: 16 }}>
+                    Enter values and click "Calculate Final Price" to see the breakdown
+                  </Paragraph>
+                </div>
+              )}
+            </Card>
+          </Col>
+        </Row>
+
+        {/* Quote Builder Section */}
+        {quoteItems.length > 0 && (
+          <Card 
+            title={
+              <Space>
+                <Text strong>Quote Builder</Text>
+                <Tag color="blue">{quoteItems.length} items</Tag>
+              </Space>
+            }
+          >
+            <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+              <Table
+                columns={quoteColumns}
+                dataSource={quoteItems}
+                pagination={false}
+                scroll={{ x: 1000 }}
+                summary={() => (
+                  <Table.Summary fixed>
+                    <Table.Summary.Row>
+                      <Table.Summary.Cell index={0} colSpan={7} align="right">
+                        <strong>Quote Total:</strong>
+                      </Table.Summary.Cell>
+                      <Table.Summary.Cell index={1} align="right">
+                        <strong style={{ fontSize: 16, color: '#52c41a' }}>
+                          N${quoteTotal.toFixed(2)}
+                        </strong>
+                      </Table.Summary.Cell>
+                      <Table.Summary.Cell index={2} />
+                    </Table.Summary.Row>
+                    <Table.Summary.Row>
+                      <Table.Summary.Cell index={0} colSpan={7} align="right">
+                        <Text type="secondary">Total Savings:</Text>
+                      </Table.Summary.Cell>
+                      <Table.Summary.Cell index={1} align="right">
+                        <Text type="success">N${quoteSavings.toFixed(2)}</Text>
+                      </Table.Summary.Cell>
+                      <Table.Summary.Cell index={2} />
+                    </Table.Summary.Row>
+                  </Table.Summary>
+                )}
+              />
+            </Space>
+          </Card>
+        )}
+      </Space>
+    </AntNavigation>
   );
 }
-
